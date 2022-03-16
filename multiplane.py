@@ -67,7 +67,7 @@ is_large_cluster = np.in1d(labels, large_cluster_labels)
 larger_cluster_indices = np.arange(np.asarray(pcd.points).shape[0])[is_large_cluster]
 pcd = pcd.select_by_index(larger_cluster_indices)
 print("Removed small clusters")
-o3d.visualization.draw_geometries([pcd])
+# o3d.visualization.draw_geometries([pcd])
 
 
 # Perform plane segmentation
@@ -89,8 +89,20 @@ for i in range(max_plane_idx):
     segments[i]=rest.select_by_index(inliers)
     segments[i].paint_uniform_color(list(colours[:3]))
     rest = rest.select_by_index(inliers, invert=True)
+
     print("pass",i+1,"/",max_plane_idx,"done.")
+
+line_sets = []
+
+for i in range(len(segments)):
+    print(segment_models[i], segments[i])
+    extent = segments[i].get_oriented_bounding_box()
+    line_set = o3d.geometry.LineSet.create_from_oriented_bounding_box(extent)
+    colors = [[1, 0, 0] for i in range(12)]
+    line_set.colors = o3d.utility.Vector3dVector(colors)
+    line_sets.append(line_set)
     
+o3d.visualization.draw_geometries(line_sets + [segments[i] for i in range(max_actual)]+[rest])
 o3d.visualization.draw_geometries([segments[i] for i in range(max_actual)]+[rest], 
     front=[0.01108164692705163, 0.99948318020971616, -0.030175645465445922],
     lookat=[ 0.36654839499999969, 1.0939715543333333, 0.30774251988636392 ],

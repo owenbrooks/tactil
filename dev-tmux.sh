@@ -1,7 +1,7 @@
 #!/bin/sh
 session="fyp"
 tmux new-session -d -s $session
-tmux send-keys 'source fyp_env/bin/activate'
+tmux send-keys 'source env/bin/activate'
 tmux send-keys Enter C-l
 tmux new-window
 tmux select-window -t 1
