@@ -86,7 +86,6 @@ for i in range(max_plane_idx):
         # filter for vertical planes (horizontal normals)
         normal = plane_model[0:3]
         vertical = np.array([0.0, 1.0, 0.0])
-        print(np.dot(vertical, normal))
         is_vertical = np.dot(vertical, normal) < 0.5
         if is_vertical:
             segment_models.append(plane_model)
@@ -117,13 +116,13 @@ for i in range(len(segments)):
         noise_label = np.amax(labels)+1
         labels[labels == -1] = noise_label # need all non-negative for bincount
         count = np.bincount(labels)
-        large_cluster_labels = np.unique(labels)[count > 800]
+        large_cluster_labels = np.unique(labels)[count > 80]
         noise_points = np.argwhere(large_cluster_labels == noise_label)
         large_cluster_labels = np.delete(large_cluster_labels, noise_points) # remove noise points which might otherwise form a big cluster
         is_large_cluster = np.in1d(labels, large_cluster_labels)
         larger_cluster_indices = np.arange(np.asarray(seg_pcd.points).shape[0])[is_large_cluster]
         segments[i] = seg_pcd.select_by_index(larger_cluster_indices)
-        print("Removed small clusters")
+        print("Removed small clusters from planes")
 
     # o3d.visualization.draw_geometries([seg_pcd])
 
