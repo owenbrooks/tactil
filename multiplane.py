@@ -71,8 +71,8 @@ print("Removed small clusters")
 
 
 # Perform plane segmentation
-segment_models={}
-segments={}
+segment_models=[]
+segments=[]
 rest = pcd
 max_plane_idx = 15
 rest.paint_uniform_color([0.8, 0.8, 0.8])
@@ -80,16 +80,25 @@ rest.paint_uniform_color([0.8, 0.8, 0.8])
 for i in range(max_plane_idx):
     colours = plt.get_cmap("tab20")(i)
     try:
-        segment_models[i], inliers = rest.segment_plane(
+        plane_model, inliers = rest.segment_plane(
         distance_threshold=0.05,ransac_n=3,num_iterations=1000)
+        # filter for vertical planes (horizontal normals)
+        normal = plane_model[0:3]
+        vertical = np.array([0.0, 1.0, 0.0])
+        print(np.dot(vertical, normal))
+        is_vertical = np.dot(vertical, normal) < 0.5
+        if is_vertical:
+            segment_models.append(plane_model)
+            segment = rest.select_by_index(inliers)
+            segment.paint_uniform_color(list(colours[:3]))
+            segments.append(segment)
+            rest = rest.select_by_index(inliers, invert=True)
+            print("accepted")
+        else:
+            print("rejected")
     except:
         break
     
-    max_actual = i
-    segments[i]=rest.select_by_index(inliers)
-    segments[i].paint_uniform_color(list(colours[:3]))
-    rest = rest.select_by_index(inliers, invert=True)
-
     print("pass",i+1,"/",max_plane_idx,"done.")
 
 line_sets = []
@@ -102,13 +111,13 @@ for i in range(len(segments)):
     line_set.colors = o3d.utility.Vector3dVector(colors)
     line_sets.append(line_set)
     
-o3d.visualization.draw_geometries(line_sets + [segments[i] for i in range(max_actual)]+[rest])
-o3d.visualization.draw_geometries([segments[i] for i in range(max_actual)]+[rest], 
-    front=[0.01108164692705163, 0.99948318020971616, -0.030175645465445922],
-    lookat=[ 0.36654839499999969, 1.0939715543333333, 0.30774251988636392 ],
-    up=[ 0.34805089590732086, -0.032145887433672644, -0.93692433834286371 ],
-    zoom=0.37999999999999967
-    )
+o3d.visualization.draw_geometries(line_sets + segments +[rest])
+# o3d.visualization.draw_geometries(segments+[rest], 
+#     front=[0.01108164692705163, 0.99948318020971616, -0.030175645465445922],
+#     lookat=[ 0.36654839499999969, 1.0939715543333333, 0.30774251988636392 ],
+#     up=[ 0.34805089590732086, -0.032145887433672644, -0.93692433834286371 ],
+#     zoom=0.37999999999999967
+#     )
 
 
 # Flatten into 2D and downsample again
@@ -116,4 +125,4 @@ points = np.asarray(pcd.points)
 points[:, 1] = 0.0 # flatten
 pcd.points = o3d.utility.Vector3dVector(points)
 pcd = pcd.voxel_down_sample(voxel_size=0.05)
-o3d.visualization.draw_geometries([pcd])
+# o3d.visualization.draw_geometries([pcd])
