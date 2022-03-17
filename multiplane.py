@@ -3,7 +3,6 @@ import open3d as o3d
 import sys
 import matplotlib.pyplot as plt
 
-
 # Load pcd
 print("Loading pcd")
 filename = sys.argv[1]
@@ -23,6 +22,7 @@ remaining = points[:, 1] < 2.2
 pcd = pcd.select_by_index(np.arange(len(remaining))[remaining])
 print(np.asarray(pcd.points).shape)
 # o3d.visualization.draw_geometries([pcd], point_show_normal=False)
+
 
 # # Perform plane segmentation to filter out ground points
 # ground_plane, inliers = pcd.segment_plane(
@@ -46,8 +46,9 @@ print(f"Filtered for horizontal normals, new length: {np.asarray(pcd.points).sha
 # Cluster using dbscan
 with o3d.utility.VerbosityContextManager(
         o3d.utility.VerbosityLevel.Debug) as cm:
-    labels = np.array(
-        pcd.cluster_dbscan(eps=0.1, min_points=10, print_progress=True))
+    labels = np.array(pcd.cluster_dbscan(eps=0.1, min_points=10, print_progress=True))
+    # for an nx3 pcd, labels is nx1 integers, with -1 representing noise points, 
+    # and positive ints and 0 indicating which cluster a point belongs to
 max_label = labels.max()
 print(f"Point cloud has {max_label + 1} clusters")
 colors = plt.get_cmap("tab20")(labels / (max_label if max_label > 0 else 1))
@@ -70,7 +71,7 @@ print("Removed small clusters")
 # o3d.visualization.draw_geometries([pcd])
 
 
-# Perform plane segmentation
+# Perform plane segmentation and get bounding boxes for vertical planes
 segment_models=[]
 segments=[]
 rest = pcd
@@ -101,8 +102,34 @@ for i in range(max_plane_idx):
     
     print("pass",i+1,"/",max_plane_idx,"done.")
 
-line_sets = []
 
+# Ensure each plane is made up of only the largest contiguous cluster that fit
+for i in range(len(segments)):
+    seg_pcd = segments[i]
+    seg_model = segment_models[i]
+    with o3d.utility.VerbosityContextManager(
+        o3d.utility.VerbosityLevel.Debug) as cm:
+        labels = np.array(seg_pcd.cluster_dbscan(eps=0.1, min_points=10, print_progress=True))
+        max_label = labels.max()
+
+
+        # Remove small clusters
+        noise_label = np.amax(labels)+1
+        labels[labels == -1] = noise_label # need all non-negative for bincount
+        count = np.bincount(labels)
+        large_cluster_labels = np.unique(labels)[count > 800]
+        noise_points = np.argwhere(large_cluster_labels == noise_label)
+        large_cluster_labels = np.delete(large_cluster_labels, noise_points) # remove noise points which might otherwise form a big cluster
+        is_large_cluster = np.in1d(labels, large_cluster_labels)
+        larger_cluster_indices = np.arange(np.asarray(seg_pcd.points).shape[0])[is_large_cluster]
+        segments[i] = seg_pcd.select_by_index(larger_cluster_indices)
+        print("Removed small clusters")
+
+    # o3d.visualization.draw_geometries([seg_pcd])
+
+
+# Find and draw oriented bounding boxes
+line_sets = []
 for i in range(len(segments)):
     print(segment_models[i], segments[i])
     extent = segments[i].get_oriented_bounding_box()
