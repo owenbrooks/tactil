@@ -12,8 +12,17 @@ pcd = o3d.io.read_point_cloud(filename)
 print("Loaded pcd")
 
 # Downsample pcd
-pcd = pcd.voxel_down_sample(voxel_size=0.25)
+pcd = pcd.voxel_down_sample(voxel_size=0.1)
 print("Downsampled pcd")
+
+
+# Filter out for only points that have close to horizontal normals
+normals = np.asarray(pcd.normals)
+vertical = np.array([0.0, 1.0, 0.0])
+dot = np.array([np.dot(vertical, norm) for norm in normals])
+horz_norms = np.arange(len(dot))[np.abs(dot)<0.2]
+pcd = pcd.select_by_index(horz_norms)
+print(f"Filtered for horizontal normals, new length: {np.asarray(pcd.points).shape[0]}")
 
 
 # Compute unit normal vectors
@@ -29,7 +38,7 @@ nz = unit_normals[:, 2]
 
 
 # Compute clustering with MeanShift after estimating bandwidth
-bandwidth = estimate_bandwidth(unit_normals, quantile=0.1)
+bandwidth = estimate_bandwidth(unit_normals, quantile=0.05)
 ms = MeanShift(bandwidth=bandwidth, bin_seeding=True)
 ms.fit(unit_normals)
 labels = ms.labels_
