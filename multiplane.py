@@ -53,7 +53,7 @@ def remove_small_clusters(pcd, labels, min_point_count):
 
 
 # Perform plane segmentation and get bounding boxes for vertical planes
-def segment_planes(pcd, distance_threshold, num_iterations, verticality_epsilon):
+def segment_planes(pcd, distance_threshold, num_iterations, verticality_epsilon, min_plane_size):
     segment_models=[]
     segments=[]
     rest = pcd
@@ -63,6 +63,8 @@ def segment_planes(pcd, distance_threshold, num_iterations, verticality_epsilon)
     for i in range(max_plane_idx):
         colours = plt.get_cmap("tab20")(i)
         try:
+            if len(np.asarray(rest.points)) < min_plane_size:
+                break
             plane_model, inliers = rest.segment_plane(distance_threshold=distance_threshold,ransac_n=3,num_iterations=num_iterations)
             # filter for vertical planes (horizontal normals)
             normal = plane_model[0:3]
@@ -74,13 +76,10 @@ def segment_planes(pcd, distance_threshold, num_iterations, verticality_epsilon)
                 segment.paint_uniform_color(list(colours[:3]))
                 segments.append(segment)
                 rest = rest.select_by_index(inliers, invert=True)
-                print("accepted")
-            else:
-                print("rejected")
         except Exception as e:
             print(e)
         
-        print("pass",i+1,"/",max_plane_idx,"done.")
+        # print("pass",i+1,"/",max_plane_idx,"done.")
 
     return segments, segment_models, rest
 
@@ -89,13 +88,24 @@ def segment_planes(pcd, distance_threshold, num_iterations, verticality_epsilon)
 def get_bounding_boxes(segments, segment_models):
     line_sets = []
     for i in range(len(segments)):
-        print(segment_models[i], segments[i])
         extent = segments[i].get_oriented_bounding_box()
         line_set = o3d.geometry.LineSet.create_from_oriented_bounding_box(extent)
         colors = [[1, 0, 0] for i in range(12)]
         line_set.colors = o3d.utility.Vector3dVector(colors)
         line_sets.append(line_set)
     return line_sets
+
+
+def separate_pcd(pcd, labels):
+    clusters = []
+
+    for label in range(np.amax(labels)):
+        current_cluster_mask = labels == label
+        current_cluster_indices = np.arange(np.asarray(pcd.points).shape[0])[current_cluster_mask]
+        cluster = pcd.select_by_index(current_cluster_indices)
+        clusters.append(cluster)
+
+    return clusters
 
 
 def main():
@@ -113,7 +123,7 @@ def main():
     max_height = 2.2
     pcd = vertical_threshold(pcd, threshold_height=max_height)
     print(f"Removed points higher than {vertical_threshold}")
-    # o3d.visualization.draw_geometries([pcd], point_show_normal=False)
+    o3d.visualization.draw_geometries([pcd], point_show_normal=False)
 
     pcd = horizontal_normal_filter(pcd, 0.2)
     print(f"Filtered for horizontal normals, new length: {np.asarray(pcd.points).shape[0]}")
@@ -127,7 +137,7 @@ def main():
     print(f"Removed clusters smaller than {min_cluster_size} points.")
     # o3d.visualization.draw_geometries([pcd])
 
-    segments, segment_models, rest = segment_planes(pcd, distance_threshold=0.05, num_iterations=1000, verticality_epsilon=0.5)
+    segments, segment_models, rest = segment_planes(pcd, distance_threshold=0.05, num_iterations=1000, verticality_epsilon=0.5, min_plane_size=10)
 
     # Ensure each plane is made up of only the largest contiguous cluster that fit
     for i in range(len(segments)):

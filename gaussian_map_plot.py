@@ -4,7 +4,7 @@ import sys
 import plotly.graph_objects as go
 from sklearn.cluster import MeanShift, estimate_bandwidth
 import matplotlib.pyplot as plt
-from multiplane import dbscan_cluster, remove_small_clusters
+from multiplane import dbscan_cluster, remove_small_clusters, get_bounding_boxes, segment_planes, separate_pcd
 
 def main():
     # Load pcd
@@ -58,28 +58,57 @@ def main():
 
 
     # Plot 3D gaussian map
-    fig = go.Figure(data=[
-            go.Scatter3d(x=nx[::10], y=ny[::10], z=nz[::10], mode='markers', 
-                marker=dict(
-                    color=labels[::10],
-                    size=2,
-                ),
-            ), 
-    ])
-    fig.show()
+    # fig = go.Figure(data=[
+    #         go.Scatter3d(x=nx[::10], y=ny[::10], z=nz[::10], mode='markers', 
+    #             marker=dict(
+    #                 color=labels[::10],
+    #                 size=2,
+    #             ),
+    #         ), 
+    # ])
+    # fig.show()
 
 
     # Paint point cloud according to cluster
-    clusters = []
+    normal_clusters = []
     for i in range(len(labels_unique)):
         colours = plt.get_cmap("tab20")(i)
         current_cluster_mask = labels == i
         current_cluster_indices = np.arange(len(np.asarray(pcd.points)))[current_cluster_mask]
         cluster = pcd.select_by_index(current_cluster_indices)
         cluster.paint_uniform_color(list(colours[:3]))
-        clusters.append(cluster)
+        normal_clusters.append(cluster)
 
-    o3d.visualization.draw_geometries(clusters)
+    # o3d.visualization.draw_geometries(normal_clusters)
+
+    # Remove small dbscan clusters for each normal group
+    large_normal_clusters = []
+    for norm_clust in normal_clusters:
+        labels = dbscan_cluster(norm_clust, epsilon=0.2, min_points=10)
+        separated_clusters = separate_pcd(norm_clust, labels)
+        large_normal_clusters += separated_clusters
+
+    o3d.visualization.draw_geometries(large_normal_clusters)
+
+    # segment planes
+    planes = [] 
+    plane_models = []
+    remaining_points = []
+    for norm_clust in large_normal_clusters:
+        segments, segment_models, rest = segment_planes(norm_clust, distance_threshold=0.05, num_iterations=1000, verticality_epsilon=0.5, min_plane_size=100)
+
+        # generate bounding boxes
+        line_sets = get_bounding_boxes(segments, segment_models)
+        # o3d.visualization.draw_geometries(segments + line_sets + [rest])
+
+        planes += segments
+        plane_models += segment_models
+        remaining_points.append(rest)
+
+    line_sets = get_bounding_boxes(planes, plane_models)
+    o3d.visualization.draw_geometries(line_sets)
+    o3d.visualization.draw_geometries(line_sets + planes)
+    # o3d.visualization.draw_geometries(normal_clusters + line_sets + planes + remaining_points)
 
 if __name__ == "__main__":
     main()
