@@ -3,6 +3,7 @@ import open3d as o3d
 import sys
 import plotly.graph_objects as go
 from sklearn.cluster import MeanShift, estimate_bandwidth
+import plotly.express as px
 
 # Load pcd
 print("Loading pcd")
@@ -43,6 +44,7 @@ fig = go.Figure(data=[go.Scatter(x=u, y=v, mode='markers')])
 
 # Compute clustering with MeanShift
 X = np.stack([u, v], axis=1)
+X = unit_normals
 # The following bandwidth can be automatically detected using
 bandwidth = estimate_bandwidth(X, quantile=0.1)
 
@@ -61,18 +63,18 @@ print("number of estimated clusters : %d" % n_clusters_)
 print(labels.shape, labels, labels_unique)
 fig = go.Figure(data=[go.Scatter(x=u, y=v, mode='markers',
     marker=dict(
-        color=labels/(np.max(labels)+1),
-        colorscale='sunsetdark',
+        color=labels,
         size=6
     ))])
 fig.show()
 
 # Plot 3D gaussian map
-fig = go.Figure(data=[go.Scatter3d(x=nx, y=ny, z=nz, mode='markers', 
-        marker=dict(
-            color=labels/(np.max(labels)+1),
-            colorscale='sunsetdark',
-            size=2
-        ))
-    ])
+fig = go.Figure(data=[
+        go.Scatter3d(x=nx, y=ny, z=nz, mode='markers', 
+            marker=dict(
+                color=labels,
+                size=2,
+            ),
+        ), 
+])
 fig.show()
