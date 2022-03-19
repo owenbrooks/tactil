@@ -1,2 +1,4 @@
-fyp_env
+env
 *.pcd
+.vscode
+__pycache__
