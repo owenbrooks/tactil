@@ -4,7 +4,7 @@ import sys
 import plotly.graph_objects as go
 from sklearn.cluster import MeanShift, estimate_bandwidth
 import matplotlib.pyplot as plt
-from multiplane import dbscan_cluster, remove_small_clusters, get_bounding_boxes, segment_planes, separate_pcd_by_labels, vertical_threshold
+from cloud_processes import dbscan_cluster, remove_small_clusters, get_bounding_boxes, segment_planes, separate_pcd_by_labels, vertical_threshold
 
 def main():
     # Load pcd
