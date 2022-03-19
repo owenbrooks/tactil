@@ -86,13 +86,15 @@ def segment_planes(pcd, distance_threshold, num_iterations, verticality_epsilon,
 # Find and draw oriented bounding boxes
 def get_bounding_boxes(segments):
     line_sets = []
+    boxes = []
     for i in range(len(segments)):
-        extent = segments[i].get_oriented_bounding_box(robust=True)
-        line_set = o3d.geometry.LineSet.create_from_oriented_bounding_box(extent)
+        box = segments[i].get_oriented_bounding_box(robust=True)
+        line_set = o3d.geometry.LineSet.create_from_oriented_bounding_box(box)
         colors = [[1, 0, 0] for _ in range(12)]
         line_set.colors = o3d.utility.Vector3dVector(colors)
         line_sets.append(line_set)
-    return line_sets
+        boxes.append(box)
+    return line_sets, boxes
 
 
 def separate_pcd_by_labels(pcd, labels):

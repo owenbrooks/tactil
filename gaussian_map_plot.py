@@ -35,7 +35,7 @@ def main():
     horz_norms = np.arange(len(dot))[np.abs(dot)<0.2]
     pcd = pcd.select_by_index(horz_norms)
     print(f"Filtered for horizontal normals, new length: {np.asarray(pcd.points).shape[0]}")
-    o3d.visualization.draw_geometries([pcd])
+    # o3d.visualization.draw_geometries([pcd])
 
     # Perform dbscan clustering and remove small clusters
     min_cluster_size = 20 # points
@@ -44,7 +44,7 @@ def main():
     pcd = remove_small_clusters(pcd, labels, min_point_count=min_cluster_size)
     rem_small_toc = time.perf_counter()
     print(f"Removed clusters smaller than {min_cluster_size} points in {rem_small_toc-rem_small_tic: 0.4f} seconds")
-    o3d.visualization.draw_geometries([pcd])
+    # o3d.visualization.draw_geometries([pcd])
 
     # Compute unit normal vectors
     normals = np.asarray(pcd.normals)
@@ -126,9 +126,8 @@ def main():
         plane_models += segment_models
         remaining_points.append(rest)
 
-    line_sets = get_bounding_boxes(planes)
-    # o3d.visualization.draw_geometries(line_sets)
-    o3d.visualization.draw_geometries(line_sets + planes)
+    line_sets, _ = get_bounding_boxes(planes)
+    # o3d.visualization.draw_geometries(line_sets + planes)
     # o3d.visualization.draw_geometries(normal_clusters + line_sets + planes + remaining_points)
 
     # Flatten into 2D and downsample again
@@ -141,9 +140,20 @@ def main():
         flatten(cloud)
 
     # pcd = pcd.voxel_down_sample(voxel_size=0.05)
-    line_sets = get_bounding_boxes(planes)
-    o3d.visualization.draw_geometries(planes + line_sets)
-    o3d.visualization.draw_geometries(line_sets)
+    line_sets, boxes = get_bounding_boxes(planes)
+    # o3d.visualization.draw_geometries(planes + line_sets)
+    # o3d.visualization.draw_geometries(line_sets)
+
+    centers = np.array([box.get_center() for box in boxes])
+    extents = np.array([box.extent for box in boxes])
+    rotations = np.array([box.R for box in boxes])
+
+    with open('output/centres.npy', 'wb') as f:
+        np.save(f, centers)
+    with open('output/extents.npy', 'wb') as f:
+        np.save(f, extents)
+    with open('output/rotations.npy', 'wb') as f:
+        np.save(f, rotations)
 
 
 if __name__ == "__main__":
