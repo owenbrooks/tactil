@@ -13,10 +13,12 @@ def main():
     pcd = o3d.io.read_point_cloud(filename)
     print("Loaded pcd")
 
-    # Display downsampled pcd with roof removed
+    # Remove roof
     max_height = 2.2
-    downsampled_for_display = pcd.voxel_down_sample(voxel_size=0.05)
-    downsampled_for_display = vertical_threshold(downsampled_for_display, threshold_height=max_height)
+    pcd = vertical_threshold(pcd, threshold_height=max_height)
+
+    # Display downsampled pcd with roof removed
+    # downsampled_for_display = pcd.voxel_down_sample(voxel_size=0.05)
     # o3d.visualization.draw_geometries([downsampled_for_display])
 
     # Downsample pcd
