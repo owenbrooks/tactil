@@ -2,16 +2,19 @@ import numpy as np
 import open3d as o3d
 import sys
 import plotly.graph_objects as go
+import time
 from sklearn.cluster import MeanShift, estimate_bandwidth
 import matplotlib.pyplot as plt
 from cloud_processes import dbscan_cluster, remove_small_clusters, get_bounding_boxes, segment_planes, separate_pcd_by_labels, vertical_threshold
 
 def main():
     # Load pcd
+    load_tic = time.perf_counter()
     print("Loading pcd")
     filename = sys.argv[1]
     pcd = o3d.io.read_point_cloud(filename)
-    print("Loaded pcd")
+    load_toc = time.perf_counter()
+    print(f"Loaded pcd {filename} in {load_toc-load_tic: 0.4f} seconds")
 
     # Remove roof
     max_height = 2.2
@@ -32,14 +35,16 @@ def main():
     horz_norms = np.arange(len(dot))[np.abs(dot)<0.2]
     pcd = pcd.select_by_index(horz_norms)
     print(f"Filtered for horizontal normals, new length: {np.asarray(pcd.points).shape[0]}")
+    o3d.visualization.draw_geometries([pcd])
 
-    labels = dbscan_cluster(pcd, epsilon=0.2, min_points=10)
-
+    # Perform dbscan clustering and remove small clusters
     min_cluster_size = 20 # points
+    rem_small_tic = time.perf_counter()
+    labels = dbscan_cluster(pcd, epsilon=0.2, min_points=10)
     pcd = remove_small_clusters(pcd, labels, min_point_count=min_cluster_size)
-    print(f"Removed clusters smaller than {min_cluster_size} points.")
-    # o3d.visualization.draw_geometries([pcd])
-
+    rem_small_toc = time.perf_counter()
+    print(f"Removed clusters smaller than {min_cluster_size} points in {rem_small_toc-rem_small_tic: 0.4f} seconds")
+    o3d.visualization.draw_geometries([pcd])
 
     # Compute unit normal vectors
     normals = np.asarray(pcd.normals)
@@ -51,12 +56,17 @@ def main():
 
 
     # Compute clustering with MeanShift after estimating bandwidth
+    bw_tic = time.perf_counter()
     bandwidth = estimate_bandwidth(unit_normals, quantile=0.05)
+    bw_toc = time.perf_counter()
+    print(f"Estimated bandwidth as {bandwidth} in {bw_toc-bw_tic: 0.4f} seconds")
+    ms_tic = time.perf_counter()
     ms = MeanShift(bandwidth=bandwidth, bin_seeding=True)
     ms.fit(unit_normals)
+    ms_toc = time.perf_counter()
     labels = ms.labels_
     labels_unique = np.unique(labels)
-    print(f"Number of estimated clusters based on normal direction: {len(labels_unique)}")
+    print(f"Meanshift normal clustering: found {len(labels_unique)} clusters in {ms_toc-ms_tic: 0.4f} seconds")
 
 
     # Plot 3D gaussian map
