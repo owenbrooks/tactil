@@ -58,7 +58,7 @@ def segment_planes(pcd, distance_threshold, num_iterations, verticality_epsilon,
     segments=[]
     rest = pcd
     max_plane_idx = 15
-    rest.paint_uniform_color([0.8, 0.8, 0.8])
+    # rest.paint_uniform_color([0.8, 0.8, 0.8])
 
     for i in range(max_plane_idx):
         colours = plt.get_cmap("tab20")(i)
@@ -73,7 +73,7 @@ def segment_planes(pcd, distance_threshold, num_iterations, verticality_epsilon,
             if is_vertical:
                 segment_models.append(plane_model)
                 segment = rest.select_by_index(inliers)
-                segment.paint_uniform_color(list(colours[:3]))
+                # segment.paint_uniform_color(list(colours[:3]))
                 segments.append(segment)
                 rest = rest.select_by_index(inliers, invert=True)
         except Exception as e:
@@ -90,16 +90,18 @@ def get_bounding_boxes(segments, segment_models):
     for i in range(len(segments)):
         extent = segments[i].get_oriented_bounding_box()
         line_set = o3d.geometry.LineSet.create_from_oriented_bounding_box(extent)
-        colors = [[1, 0, 0] for i in range(12)]
+        colors = [[1, 0, 0] for _ in range(12)]
         line_set.colors = o3d.utility.Vector3dVector(colors)
         line_sets.append(line_set)
     return line_sets
 
 
-def separate_pcd(pcd, labels):
+def separate_pcd_by_labels(pcd, labels):
+    """ pcd: open3d point cloud with N points
+        labels: 1xN numpy array of non-negative integers serving as point labels"""
     clusters = []
 
-    for label in range(np.amax(labels)):
+    for label in range(np.amax(labels)+1):
         current_cluster_mask = labels == label
         current_cluster_indices = np.arange(np.asarray(pcd.points).shape[0])[current_cluster_mask]
         cluster = pcd.select_by_index(current_cluster_indices)
