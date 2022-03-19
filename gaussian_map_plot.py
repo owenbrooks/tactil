@@ -4,7 +4,7 @@ import sys
 import plotly.graph_objects as go
 from sklearn.cluster import MeanShift, estimate_bandwidth
 import matplotlib.pyplot as plt
-from multiplane import dbscan_cluster, remove_small_clusters, get_bounding_boxes, segment_planes, separate_pcd_by_labels
+from multiplane import dbscan_cluster, remove_small_clusters, get_bounding_boxes, segment_planes, separate_pcd_by_labels, vertical_threshold
 
 def main():
     # Load pcd
@@ -13,10 +13,15 @@ def main():
     pcd = o3d.io.read_point_cloud(filename)
     print("Loaded pcd")
 
+    # Display downsampled pcd with roof removed
+    max_height = 2.2
+    downsampled_for_display = pcd.voxel_down_sample(voxel_size=0.05)
+    downsampled_for_display = vertical_threshold(downsampled_for_display, threshold_height=max_height)
+    # o3d.visualization.draw_geometries([downsampled_for_display])
+
     # Downsample pcd
     pcd = pcd.voxel_down_sample(voxel_size=0.1)
     print("Downsampled pcd")
-
 
     # Filter out for only points that have close to horizontal normals
     normals = np.asarray(pcd.normals)
@@ -81,7 +86,6 @@ def main():
             colour = plt.get_cmap("tab20")(i)
             pcd_list[i].paint_uniform_color(list(colour[:3]))
 
-    paint_pcd_list(normal_clusters)
     # o3d.visualization.draw_geometries(normal_clusters)
 
 
@@ -92,6 +96,7 @@ def main():
         separated_clusters = separate_pcd_by_labels(norm_clust, labels) 
         large_normal_clusters += separated_clusters[:-1] # removes last label which are "noise" points
 
+    paint_pcd_list(normal_clusters)
     o3d.visualization.draw_geometries(large_normal_clusters)
 
     # segment planes
@@ -109,10 +114,25 @@ def main():
         plane_models += segment_models
         remaining_points.append(rest)
 
-    line_sets = get_bounding_boxes(planes, plane_models)
-    o3d.visualization.draw_geometries(line_sets)
+    line_sets = get_bounding_boxes(planes)
+    # o3d.visualization.draw_geometries(line_sets)
     o3d.visualization.draw_geometries(line_sets + planes)
     # o3d.visualization.draw_geometries(normal_clusters + line_sets + planes + remaining_points)
+
+    # Flatten into 2D and downsample again
+    def flatten(pcd):
+        points = np.asarray(pcd.points)
+        points[:, 1] = 0.0 # flatten
+        pcd.points = o3d.utility.Vector3dVector(points)
+
+    for cloud in planes:
+        flatten(cloud)
+
+    # pcd = pcd.voxel_down_sample(voxel_size=0.05)
+    line_sets = get_bounding_boxes(planes)
+    o3d.visualization.draw_geometries(planes + line_sets)
+    o3d.visualization.draw_geometries(line_sets)
+
 
 if __name__ == "__main__":
     main()

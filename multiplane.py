@@ -85,10 +85,10 @@ def segment_planes(pcd, distance_threshold, num_iterations, verticality_epsilon,
 
 
 # Find and draw oriented bounding boxes
-def get_bounding_boxes(segments, segment_models):
+def get_bounding_boxes(segments):
     line_sets = []
     for i in range(len(segments)):
-        extent = segments[i].get_oriented_bounding_box()
+        extent = segments[i].get_oriented_bounding_box(robust=True)
         line_set = o3d.geometry.LineSet.create_from_oriented_bounding_box(extent)
         colors = [[1, 0, 0] for _ in range(12)]
         line_set.colors = o3d.utility.Vector3dVector(colors)
@@ -108,64 +108,3 @@ def separate_pcd_by_labels(pcd, labels):
         clusters.append(cluster)
 
     return clusters
-
-
-def main():
-    # Load pcd
-    print("Loading pcd")
-    filename = sys.argv[1]
-    pcd = o3d.io.read_point_cloud(filename)
-    print("Loaded pcd")
-
-    voxel_size = 0.05
-    pcd = pcd.voxel_down_sample(voxel_size=voxel_size)
-    print(f"Downsampled pcd using voxels of size {voxel_size}")
-    # o3d.visualization.draw_geometries([pcd], point_show_normal=False)
-
-    max_height = 2.2
-    pcd = vertical_threshold(pcd, threshold_height=max_height)
-    print(f"Removed points higher than {vertical_threshold}")
-    o3d.visualization.draw_geometries([pcd], point_show_normal=False)
-
-    pcd = horizontal_normal_filter(pcd, 0.2)
-    print(f"Filtered for horizontal normals, new length: {np.asarray(pcd.points).shape[0]}")
-    # o3d.visualization.draw_geometries([pcd], point_show_normal=False)
-
-    labels = dbscan_cluster(pcd, epsilon=0.1, min_points=10)
-    # o3d.visualization.draw_geometries([pcd])
-
-    min_cluster_size = 800 # points
-    pcd = remove_small_clusters(pcd, labels, min_point_count=min_cluster_size)
-    print(f"Removed clusters smaller than {min_cluster_size} points.")
-    # o3d.visualization.draw_geometries([pcd])
-
-    segments, segment_models, rest = segment_planes(pcd, distance_threshold=0.05, num_iterations=1000, verticality_epsilon=0.5, min_plane_size=10)
-
-    # Ensure each plane is made up of only the largest contiguous cluster that fit
-    for i in range(len(segments)):
-        seg_pcd = segments[i]
-        with o3d.utility.VerbosityContextManager(
-            o3d.utility.VerbosityLevel.Debug) as cm:
-            labels = np.array(seg_pcd.cluster_dbscan(eps=0.1, min_points=10, print_progress=False))
-            segments[i] = remove_small_clusters(seg_pcd, labels, min_point_count=80)
-
-    print("Removed small clusters from planes")
-
-    line_sets = get_bounding_boxes(segments, segment_models)
-    o3d.visualization.draw_geometries(line_sets + segments +[rest])
-    # o3d.visualization.draw_geometries(segments+[rest], 
-    #     front=[0.01108164692705163, 0.99948318020971616, -0.030175645465445922],
-    #     lookat=[ 0.36654839499999969, 1.0939715543333333, 0.30774251988636392 ],
-    #     up=[ 0.34805089590732086, -0.032145887433672644, -0.93692433834286371 ],
-    #     zoom=0.37999999999999967
-    #     )
-
-    # Flatten into 2D and downsample again
-    points = np.asarray(pcd.points)
-    points[:, 1] = 0.0 # flatten
-    pcd.points = o3d.utility.Vector3dVector(points)
-    pcd = pcd.voxel_down_sample(voxel_size=0.05)
-    # o3d.visualization.draw_geometries([pcd])
-
-if __name__ == "__main__":
-    main()
