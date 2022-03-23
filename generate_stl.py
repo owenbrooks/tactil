@@ -9,6 +9,13 @@ def main():
     with open('output/rotations.npy', 'rb') as f:
         rotations = np.load(f)
 
+    # swap column order since STL expects [x, y, z] while open3D had [x, z, y]
+    centers[:, [2, 1]] = centers[:, [1, 2]]
+    extents[:, [2, 1]] = extents[:, [1, 2]]
+    permute_mat = np.array([[1,0,0], [0,0,1], [0,1,0]])
+    rotations = rotations @ permute_mat
+    # rotations[:, [2, 1]] = rotations[:, [1, 2]]
+
     # print(centers, extents, rotations)
     wall_height = 5
 
@@ -38,11 +45,6 @@ def main():
         [0,1,5],
         [0,5,4]])
 
-    # Create the mesh
-    # cube = mesh.Mesh(np.zeros(faces.shape[0], dtype=mesh.Mesh.dtype))
-    # for i, f in enumerate(faces):
-    #     for j in range(3):
-    #         cube.vectors[i][j] = vertices[f[j],:] 
 
     cubes = []
     for i in range(centers.shape[0]):
@@ -55,21 +57,21 @@ def main():
         vert[-4:, 2] *= wall_height / 2
         vert[:, 0:2] *= extent[0:2]/2
 
+        # rotate
+        vert_rotated = vert @ rot
+        print(rot)
+
         # translate
         vert[:, 0:2] += center[0:2]
-        print(vert, center, extent)
-
-        # rotate
-        # TODO
+        # print(vert, center, extent)
 
         cube = mesh.Mesh(np.zeros(faces.shape[0], dtype=mesh.Mesh.dtype))
         for i, f in enumerate(faces):
             for j in range(3):
-                cube.vectors[i][j] = vert[f[j],:] 
-
+                cube.vectors[i][j] = vert_rotated[f[j],:] 
 
         cubes.append(cube)
-        break
+        # break
 
 
     render_meshes(cubes)
