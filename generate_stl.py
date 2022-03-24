@@ -3,7 +3,7 @@ import os
 from stl import mesh
 from scipy.spatial.transform import Rotation as R
 
-def main():
+def main(display):
     # load data of wall bounding boxes from numpy files
     with open('output/centres.npy', 'rb') as f:
         centers_unscaled = np.load(f)
@@ -17,9 +17,10 @@ def main():
     extents_unscaled[:, [2, 1]] = extents_unscaled[:, [1, 2]]
 
     # scale dimensions down to model size
-    model_scale_factor = 1/16
-    centers = centers_unscaled * model_scale_factor
-    extents = extents_unscaled * model_scale_factor
+    model_scale_factor = 1/120
+    meters_to_mm = 1000
+    centers = centers_unscaled * model_scale_factor * meters_to_mm
+    extents = extents_unscaled * model_scale_factor * meters_to_mm
 
     # define the 8 vertices of a cube
     cube_vertices = np.array([\
@@ -47,18 +48,15 @@ def main():
         [0,1,5],
         [0,5,4]])
 
+    # generate a list of meshes, one for each bounding box
     box_meshes = []
-    for box_index in range(centers.shape[0]):
-        center = centers[box_index]
-        extent = extents[box_index]
-        rot = rotations[box_index]
-
+    for center, extent, rot in zip(centers, extents, rotations):
         # scale
         vert = cube_vertices.copy()
-        wall_height = 0.04 
+        wall_height = 2.5 # mm
         vert[:, 2] *= wall_height / 2
         vert[:, 2] += wall_height / 2
-        wall_thickness = 0.02
+        wall_thickness = 2.5 # mm
         extent[1] = wall_thickness # TODO: remove this / make a minimum
         vert[:, 0:2] *= extent[0:2]/2 # apply scale in x and y directions
 
@@ -69,8 +67,8 @@ def main():
         euler_r[0] = 0 # zero out x axis rotation
         euler_r[1] = 0 # zero out y axis rotation
         r = R.from_euler('xyz', euler_r)
-        rot = r.as_matrix()
-        vert_rotated = vert @ rot
+        xy_rot = r.as_matrix()
+        vert_rotated = vert @ xy_rot
 
         # translate
         vert_transformed = vert_rotated.copy()
@@ -84,34 +82,38 @@ def main():
 
         box_meshes.append(box_mesh)
 
-    # Combine boxes into a single large mesh to be printed
+    # combine boxes into a single large mesh
     walls_mesh = mesh.Mesh(np.concatenate([cube.data for cube in box_meshes]))
 
-    # print(vert_transformed)
+    # create floor mesh on which the walls sit
+    # length and width are defined by the extent of the walls
     minx, maxx, miny, maxy = walls_mesh.x.min(), walls_mesh.x.max(), walls_mesh.y.min(), walls_mesh.y.max() 
+    border_width = 5 # mm
+    floor_thickness = 5 # mm
     floor_vert = np.array([\
-        [minx, miny, -1.],
-        [maxx, miny, -1.],
-        [maxx, maxy, -1.],
-        [minx, maxy, -1.],
-        [minx, miny, +1.],
-        [maxx, miny, +1.],
-        [maxx, maxy, +1.],
-        [minx, maxy, +1.]])
-    floor_vert[:, 2] -= 1
-    floor_vert[:, 2] *= 0.5
-    floor_vert[:, 2] *= 0.01
+        [minx-border_width, miny-border_width, -floor_thickness],
+        [maxx+border_width, miny-border_width, -floor_thickness],
+        [maxx+border_width, maxy+border_width, -floor_thickness],
+        [minx-border_width, maxy+border_width, -floor_thickness],
+        [minx-border_width, miny-border_width, 0],
+        [maxx+border_width, miny-border_width, 0],
+        [maxx+border_width, maxy+border_width, 0],
+        [minx-border_width, maxy+border_width, 0]])
+
     floor_mesh = mesh.Mesh(np.zeros(cube_faces.shape[0], dtype=mesh.Mesh.dtype))
     for i, f in enumerate(cube_faces):
         for j in range(3):
             floor_mesh.vectors[i][j] = floor_vert[f[j],:] 
 
+    # combine walls and floor into single mesh to print
     combined_mesh = mesh.Mesh(np.concatenate([cube.data for cube in box_meshes] + [floor_mesh.data]))
-    combined_mesh.save(os.path.join('output', 'out.stl'))
+    file_path = os.path.join('output', 'out.stl')
+    combined_mesh.save(file_path)
 
-    display_meshes([combined_mesh])
+    print(f"Saved STL file in {file_path}")
 
-    # display_meshes(box_meshes)
+    if display:
+        display_meshes([combined_mesh])
 
 
 def display_meshes(meshes):
@@ -135,4 +137,4 @@ def display_meshes(meshes):
     pyplot.show()
 
 if __name__ == "__main__":
-    main()
+    main(display=False)
