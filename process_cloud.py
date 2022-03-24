@@ -16,6 +16,9 @@ def main():
     load_toc = time.perf_counter()
     print(f"Loaded pcd {filename} in {load_toc-load_tic: 0.4f} seconds")
 
+    # Create coordinate frame for visualisation
+    origin_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.6, origin=[0, 0, 0])
+
     # Remove roof
     max_height = 2.2
     pcd = vertical_threshold(pcd, threshold_height=max_height)
@@ -141,8 +144,21 @@ def main():
 
     # pcd = pcd.voxel_down_sample(voxel_size=0.05)
     line_sets, boxes = get_bounding_boxes(planes)
-    # o3d.visualization.draw_geometries(planes + line_sets)
+    o3d.visualization.draw_geometries(planes + line_sets + [origin_frame])
+    o3d.visualization.draw_geometries([planes[0], line_sets[0], origin_frame])
     # o3d.visualization.draw_geometries(line_sets)
+
+    # display frame markers for each box
+    frame_markers = []
+    for box in boxes:
+        center = box.get_center()
+        rotation = box.R
+
+        mesh = o3d.geometry.TriangleMesh.create_coordinate_frame().rotate(rotation).translate(center)
+        frame_markers.append(mesh)
+
+    o3d.visualization.draw_geometries(planes + line_sets + [origin_frame] + frame_markers)
+
 
     centers = np.array([box.get_center() for box in boxes])
     extents = np.array([box.extent for box in boxes])

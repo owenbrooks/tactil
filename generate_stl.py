@@ -1,5 +1,6 @@
 import numpy as np
 from stl import mesh
+from scipy.spatial.transform import Rotation as R
 
 def main():
     with open('output/centres.npy', 'rb') as f:
@@ -12,12 +13,18 @@ def main():
     # swap column order since STL expects [x, y, z] while open3D had [x, z, y]
     centers[:, [2, 1]] = centers[:, [1, 2]]
     extents[:, [2, 1]] = extents[:, [1, 2]]
-    permute_mat = np.array([[1,0,0], [0,0,1], [0,1,0]])
-    rotations = rotations @ permute_mat
-    # rotations[:, [2, 1]] = rotations[:, [1, 2]]
+    # permute_mat = np.array([[1,0,0], [0,1,0], [0,0,1]])
+    # permute_mat = np.array([[1,0,0], [0,0,1], [0,1,0]])
+    # permute_mat = np.array([[0,0,1], [0,1,0], [0,0,1]])
+    # permute_mat = np.array([[0,1,0], [0,0,1], [1,0,0]])
+    # print(rotations)
+    # rotations = rotations @ permute_mat.T
+    # print(rotations)
+
+    print(centers[0], extents[0])
 
     # print(centers, extents, rotations)
-    wall_height = 5
+    wall_height = 1
 
     # Define the 8 vertices of the cube
     vertices = np.array([\
@@ -45,25 +52,39 @@ def main():
         [0,1,5],
         [0,5,4]])
 
-
     cubes = []
-    for i in range(centers.shape[0]):
-        center = centers[i]
-        extent = extents[i]
-        rot = rotations[i]
+    for box_index in range(centers.shape[0]):
+        center = centers[box_index]
+        extent = extents[box_index]
+        rot = rotations[box_index]
+        print(rot)
+
+        r = R.from_matrix(rot)
+        euler_r = r.as_euler('xyz')
+        print(np.rad2deg(euler_r))
+        euler_r[0] = 0
+        euler_r[2] = euler_r[1].copy()
+        euler_r[1] = 0
+        print(np.rad2deg(euler_r))
+
+        # r = R.from_euler(seq='xyz', angles=np.deg2rad([0, 10, 45]))
+        r = R.from_euler('xyz', euler_r)
+        rot = r.as_matrix()
+        # print(rot)
 
         # scale
         vert = vertices.copy()
-        vert[-4:, 2] *= wall_height / 2
-        vert[:, 0:2] *= extent[0:2]/2
+        vert[:, 2] *= wall_height / 2
+        vert[:, 2] += wall_height / 2
+        extent[1] = 0.1 # TODO: remove this / make a minimum
+        vert[:, 0:2] *= extent[0:2]/2 # apply scale in x and y directions
 
         # rotate
+        vert_rotated = vert
         vert_rotated = vert @ rot
-        print(rot)
 
         # translate
-        vert[:, 0:2] += center[0:2]
-        # print(vert, center, extent)
+        vert_rotated[:, 0:3] += center[0:3]
 
         cube = mesh.Mesh(np.zeros(faces.shape[0], dtype=mesh.Mesh.dtype))
         for i, f in enumerate(faces):
@@ -72,6 +93,9 @@ def main():
 
         cubes.append(cube)
         # break
+        print(box_index)
+        # if box_index == 3:
+        #     break
 
 
     render_meshes(cubes)
