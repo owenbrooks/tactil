@@ -52,7 +52,7 @@ def remove_small_clusters(pcd, labels, min_point_count):
 
 
 # Perform plane segmentation and get bounding boxes for vertical planes
-def segment_planes(pcd, distance_threshold, num_iterations, verticality_epsilon, min_plane_size):
+def segment_planes(pcd, distance_threshold, num_iterations, verticality_epsilon, min_plane_size, z_index):
     segment_models=[]
     segments=[]
     rest = pcd
@@ -67,7 +67,8 @@ def segment_planes(pcd, distance_threshold, num_iterations, verticality_epsilon,
             plane_model, inliers = rest.segment_plane(distance_threshold=distance_threshold,ransac_n=3,num_iterations=num_iterations)
             # filter for vertical planes (horizontal normals)
             normal = plane_model[0:3]
-            vertical = np.array([0.0, 1.0, 0.0])
+            vertical = np.array([0.0, 0.0, 0.0])
+            vertical[z_index] = 1.0
             is_vertical = np.dot(vertical, normal) < verticality_epsilon
             if is_vertical:
                 segment_models.append(plane_model)

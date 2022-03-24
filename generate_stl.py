@@ -13,8 +13,8 @@ def main(display):
         rotations = np.load(f)
 
     # swap column order since STL expects [x, y, z] while open3D had [x, z, y]
-    centers_unscaled[:, [2, 1]] = centers_unscaled[:, [1, 2]]
-    extents_unscaled[:, [2, 1]] = extents_unscaled[:, [1, 2]]
+    # centers_unscaled[:, [2, 1]] = centers_unscaled[:, [1, 2]]
+    # extents_unscaled[:, [2, 1]] = extents_unscaled[:, [1, 2]]
 
     # scale dimensions down to model size
     model_scale_factor = 1/120
@@ -63,7 +63,7 @@ def main(display):
         # rotate
         r = R.from_matrix(rot)
         euler_r = r.as_euler('xyz')
-        euler_r[2] = euler_r[1].copy() # switch y and z axes (open3d convention vs STL) so that z becomes vertical
+        # euler_r[2] = euler_r[1].copy() # switch y and z axes (open3d convention vs STL) so that z becomes vertical
         euler_r[0] = 0 # zero out x axis rotation
         euler_r[1] = 0 # zero out y axis rotation
         r = R.from_euler('xyz', euler_r)

@@ -24,8 +24,8 @@ def main():
     pcd = vertical_threshold(pcd, threshold_height=max_height)
 
     # Display downsampled pcd with roof removed
-    # downsampled_for_display = pcd.voxel_down_sample(voxel_size=0.05)
-    # o3d.visualization.draw_geometries([downsampled_for_display])
+    downsampled_for_display = pcd.voxel_down_sample(voxel_size=0.05)
+    o3d.visualization.draw_geometries([downsampled_for_display])
 
     # Downsample pcd
     pcd = pcd.voxel_down_sample(voxel_size=0.1)
@@ -33,12 +33,14 @@ def main():
 
     # Filter out for only points that have close to horizontal normals
     normals = np.asarray(pcd.normals)
-    vertical = np.array([0.0, 1.0, 0.0])
+    vertical = np.array([0.0, 0.0, 0.0])
+    z_index = 2
+    vertical[z_index] = 1.0
     dot = np.array([np.dot(vertical, norm) for norm in normals])
     horz_norms = np.arange(len(dot))[np.abs(dot)<0.2]
     pcd = pcd.select_by_index(horz_norms)
     print(f"Filtered for horizontal normals, new length: {np.asarray(pcd.points).shape[0]}")
-    # o3d.visualization.draw_geometries([pcd])
+    o3d.visualization.draw_geometries([pcd])
 
     # Perform dbscan clustering and remove small clusters
     min_cluster_size = 20 # points
@@ -47,7 +49,7 @@ def main():
     pcd = remove_small_clusters(pcd, labels, min_point_count=min_cluster_size)
     rem_small_toc = time.perf_counter()
     print(f"Removed clusters smaller than {min_cluster_size} points in {rem_small_toc-rem_small_tic: 0.4f} seconds")
-    # o3d.visualization.draw_geometries([pcd])
+    o3d.visualization.draw_geometries([pcd])
 
     # Compute unit normal vectors
     normals = np.asarray(pcd.normals)
@@ -101,7 +103,7 @@ def main():
             colour = plt.get_cmap("tab20")(i)
             pcd_list[i].paint_uniform_color(list(colour[:3]))
 
-    # o3d.visualization.draw_geometries(normal_clusters)
+    o3d.visualization.draw_geometries(normal_clusters)
 
 
     # Separate pcds further using dbscan clustering
@@ -119,7 +121,7 @@ def main():
     plane_models = []
     remaining_points = []
     for norm_clust in large_normal_clusters:
-        segments, segment_models, rest = segment_planes(norm_clust, distance_threshold=0.05, num_iterations=1000, verticality_epsilon=0.5, min_plane_size=100)
+        segments, segment_models, rest = segment_planes(norm_clust, distance_threshold=0.05, num_iterations=1000, verticality_epsilon=0.5, min_plane_size=100, z_index=2)
 
         # generate bounding boxes
         # line_sets = get_bounding_boxes(segments, segment_models)
@@ -136,7 +138,7 @@ def main():
     # Flatten into 2D and downsample again
     def flatten(pcd):
         points = np.asarray(pcd.points)
-        points[:, 1] = 0.0 # flatten
+        points[:, z_index] = 0.0 # flatten
         pcd.points = o3d.utility.Vector3dVector(points)
 
     for cloud in planes:
