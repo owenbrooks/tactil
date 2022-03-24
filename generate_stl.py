@@ -21,8 +21,8 @@ def main():
     centers = centers_unscaled * model_scale_factor
     extents = extents_unscaled * model_scale_factor
 
-    # define the 8 vertices of a box
-    vertices = np.array([\
+    # define the 8 vertices of a cube
+    cube_vertices = np.array([\
         [-1., -1., -1.],
         [+1., -1., -1.],
         [+1., +1., -1.],
@@ -32,8 +32,8 @@ def main():
         [+1., +1., +1.],
         [-1., +1., +1.]])
 
-    # define the 12 triangles composing a box
-    faces = np.array([\
+    # define the 12 triangles composing a cube
+    cube_faces = np.array([\
         [0,3,1],
         [1,3,2],
         [0,4,7],
@@ -54,7 +54,7 @@ def main():
         rot = rotations[box_index]
 
         # scale
-        vert = vertices.copy()
+        vert = cube_vertices.copy()
         wall_height = 0.04 
         vert[:, 2] *= wall_height / 2
         vert[:, 2] += wall_height / 2
@@ -77,18 +77,41 @@ def main():
         vert_transformed[:, 0:3] += center
 
         # create mesh
-        box_mesh = mesh.Mesh(np.zeros(faces.shape[0], dtype=mesh.Mesh.dtype))
-        for i, f in enumerate(faces):
+        box_mesh = mesh.Mesh(np.zeros(cube_faces.shape[0], dtype=mesh.Mesh.dtype))
+        for i, f in enumerate(cube_faces):
             for j in range(3):
                 box_mesh.vectors[i][j] = vert_transformed[f[j],:] 
 
         box_meshes.append(box_mesh)
 
     # Combine boxes into a single large mesh to be printed
-    combined_mesh = mesh.Mesh(np.concatenate([cube.data for cube in box_meshes]))
+    walls_mesh = mesh.Mesh(np.concatenate([cube.data for cube in box_meshes]))
+
+    # print(vert_transformed)
+    minx, maxx, miny, maxy = walls_mesh.x.min(), walls_mesh.x.max(), walls_mesh.y.min(), walls_mesh.y.max() 
+    floor_vert = np.array([\
+        [minx, miny, -1.],
+        [maxx, miny, -1.],
+        [maxx, maxy, -1.],
+        [minx, maxy, -1.],
+        [minx, miny, +1.],
+        [maxx, miny, +1.],
+        [maxx, maxy, +1.],
+        [minx, maxy, +1.]])
+    floor_vert[:, 2] -= 1
+    floor_vert[:, 2] *= 0.5
+    floor_vert[:, 2] *= 0.01
+    floor_mesh = mesh.Mesh(np.zeros(cube_faces.shape[0], dtype=mesh.Mesh.dtype))
+    for i, f in enumerate(cube_faces):
+        for j in range(3):
+            floor_mesh.vectors[i][j] = floor_vert[f[j],:] 
+
+    combined_mesh = mesh.Mesh(np.concatenate([cube.data for cube in box_meshes] + [floor_mesh.data]))
     combined_mesh.save(os.path.join('output', 'out.stl'))
 
-    display_meshes(box_meshes)
+    display_meshes([combined_mesh])
+
+    # display_meshes(box_meshes)
 
 
 def display_meshes(meshes):
