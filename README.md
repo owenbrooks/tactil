@@ -21,4 +21,7 @@
 ## How to run
 1. Download a .pcd file (e.g. `pcd_file.pcd`)
 1. `source env/bin/activate`
-2. `python multiplane.py pcd_file.pcd`
+2. `python process_cloud.py pcd_file.pcd`
+3. `python generate_stl.py`
+
+The generated STL file can be found in `output/out.stl`

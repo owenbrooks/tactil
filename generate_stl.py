@@ -1,32 +1,27 @@
 import numpy as np
+import os
 from stl import mesh
 from scipy.spatial.transform import Rotation as R
 
 def main():
+    # load data of wall bounding boxes from numpy files
     with open('output/centres.npy', 'rb') as f:
-        centers = np.load(f)
+        centers_unscaled = np.load(f)
     with open('output/extents.npy', 'rb') as f:
-        extents = np.load(f)
+        extents_unscaled = np.load(f)
     with open('output/rotations.npy', 'rb') as f:
         rotations = np.load(f)
 
     # swap column order since STL expects [x, y, z] while open3D had [x, z, y]
-    centers[:, [2, 1]] = centers[:, [1, 2]]
-    extents[:, [2, 1]] = extents[:, [1, 2]]
-    # permute_mat = np.array([[1,0,0], [0,1,0], [0,0,1]])
-    # permute_mat = np.array([[1,0,0], [0,0,1], [0,1,0]])
-    # permute_mat = np.array([[0,0,1], [0,1,0], [0,0,1]])
-    # permute_mat = np.array([[0,1,0], [0,0,1], [1,0,0]])
-    # print(rotations)
-    # rotations = rotations @ permute_mat.T
-    # print(rotations)
+    centers_unscaled[:, [2, 1]] = centers_unscaled[:, [1, 2]]
+    extents_unscaled[:, [2, 1]] = extents_unscaled[:, [1, 2]]
 
-    print(centers[0], extents[0])
+    # scale dimensions down to model size
+    model_scale_factor = 1/16
+    centers = centers_unscaled * model_scale_factor
+    extents = extents_unscaled * model_scale_factor
 
-    # print(centers, extents, rotations)
-    wall_height = 1
-
-    # Define the 8 vertices of the cube
+    # define the 8 vertices of a box
     vertices = np.array([\
         [-1., -1., -1.],
         [+1., -1., -1.],
@@ -37,7 +32,7 @@ def main():
         [+1., +1., +1.],
         [-1., +1., +1.]])
 
-    # Define the 12 triangles composing the cube
+    # define the 12 triangles composing a box
     faces = np.array([\
         [0,3,1],
         [1,3,2],
@@ -52,56 +47,51 @@ def main():
         [0,1,5],
         [0,5,4]])
 
-    cubes = []
+    box_meshes = []
     for box_index in range(centers.shape[0]):
         center = centers[box_index]
         extent = extents[box_index]
         rot = rotations[box_index]
-        print(rot)
-
-        r = R.from_matrix(rot)
-        euler_r = r.as_euler('xyz')
-        print(np.rad2deg(euler_r))
-        euler_r[0] = 0
-        euler_r[2] = euler_r[1].copy()
-        euler_r[1] = 0
-        print(np.rad2deg(euler_r))
-
-        # r = R.from_euler(seq='xyz', angles=np.deg2rad([0, 10, 45]))
-        r = R.from_euler('xyz', euler_r)
-        rot = r.as_matrix()
-        # print(rot)
 
         # scale
         vert = vertices.copy()
+        wall_height = 0.04 
         vert[:, 2] *= wall_height / 2
         vert[:, 2] += wall_height / 2
-        extent[1] = 0.1 # TODO: remove this / make a minimum
+        wall_thickness = 0.02
+        extent[1] = wall_thickness # TODO: remove this / make a minimum
         vert[:, 0:2] *= extent[0:2]/2 # apply scale in x and y directions
 
         # rotate
-        vert_rotated = vert
+        r = R.from_matrix(rot)
+        euler_r = r.as_euler('xyz')
+        euler_r[2] = euler_r[1].copy() # switch y and z axes (open3d convention vs STL) so that z becomes vertical
+        euler_r[0] = 0 # zero out x axis rotation
+        euler_r[1] = 0 # zero out y axis rotation
+        r = R.from_euler('xyz', euler_r)
+        rot = r.as_matrix()
         vert_rotated = vert @ rot
 
         # translate
-        vert_rotated[:, 0:3] += center[0:3]
+        vert_transformed = vert_rotated.copy()
+        vert_transformed[:, 0:3] += center
 
-        cube = mesh.Mesh(np.zeros(faces.shape[0], dtype=mesh.Mesh.dtype))
+        # create mesh
+        box_mesh = mesh.Mesh(np.zeros(faces.shape[0], dtype=mesh.Mesh.dtype))
         for i, f in enumerate(faces):
             for j in range(3):
-                cube.vectors[i][j] = vert_rotated[f[j],:] 
+                box_mesh.vectors[i][j] = vert_transformed[f[j],:] 
 
-        cubes.append(cube)
-        # break
-        print(box_index)
-        # if box_index == 3:
-        #     break
+        box_meshes.append(box_mesh)
+
+    # Combine boxes into a single large mesh to be printed
+    combined_mesh = mesh.Mesh(np.concatenate([cube.data for cube in box_meshes]))
+    combined_mesh.save(os.path.join('output', 'out.stl'))
+
+    display_meshes(box_meshes)
 
 
-    render_meshes(cubes)
-
-
-def render_meshes(meshes):
+def display_meshes(meshes):
     # Optionally render the rotated cube faces
     from matplotlib import pyplot
     from mpl_toolkits import mplot3d
