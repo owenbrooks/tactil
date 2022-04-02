@@ -1,6 +1,6 @@
 # Final Year Project: Automated 3D-printed map generation
 
-![Screenshot of filtered point cloud](./screenshot.png)
+![Screenshot of filtered point cloud](assets/screenshot.png)
 
 ## Requirements
 - Linux (ubuntu/arch)
