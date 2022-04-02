@@ -18,10 +18,18 @@
 ## How to build
 - `maturin develop`
 
-## How to run
+## How to run 
+### Generating an STL from a point cloud (.pcd) file
 1. Download a .pcd file (e.g. `pcd_file.pcd`)
 1. `source env/bin/activate`
 2. `python process_cloud.py pcd_file.pcd`
 3. `python generate_stl.py`
 
 The generated STL file can be found in `output/out.stl`
+
+### Running the flask api
+1. `source env/bin/activate`
+2. `cd backend`
+3. `flask run --host=0.0.0.0`
+
+The upload form can be found at [http://127.0.0.1:5000](http://127.0.0.1:5000)
