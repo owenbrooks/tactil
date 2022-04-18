@@ -5,16 +5,17 @@ import plotly.graph_objects as go
 import time
 from sklearn.cluster import MeanShift, estimate_bandwidth
 import matplotlib.pyplot as plt
-from cloud_processes import dbscan_cluster, remove_small_clusters, get_bounding_boxes, segment_planes, separate_pcd_by_labels, vertical_threshold
+import typing
+import os
+from pcd_operations import dbscan_cluster, remove_small_clusters, get_bounding_boxes, segment_planes, separate_pcd_by_labels, vertical_threshold
 
-def main():
+def main(pcd_path: typing.Union[str, bytes, os.PathLike], visualise: bool):
     # Load pcd
     load_tic = time.perf_counter()
     print("Loading pcd")
-    filename = sys.argv[1]
-    pcd = o3d.io.read_point_cloud(filename)
+    pcd = o3d.io.read_point_cloud(pcd_path)
     load_toc = time.perf_counter()
-    print(f"Loaded pcd {filename} in {load_toc-load_tic: 0.4f} seconds")
+    print(f"Loaded pcd {pcd_path} in {load_toc-load_tic: 0.4f} seconds")
 
     # Create coordinate frame for visualisation
     origin_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.6, origin=[0, 0, 0])
@@ -25,7 +26,9 @@ def main():
 
     # Display downsampled pcd with roof removed
     downsampled_for_display = pcd.voxel_down_sample(voxel_size=0.05)
-    o3d.visualization.draw_geometries([downsampled_for_display])
+
+    if visualise:
+        o3d.visualization.draw_geometries([downsampled_for_display])
 
     # Downsample pcd
     pcd = pcd.voxel_down_sample(voxel_size=0.1)
@@ -40,7 +43,8 @@ def main():
     horz_norms = np.arange(len(dot))[np.abs(dot)<0.2]
     pcd = pcd.select_by_index(horz_norms)
     print(f"Filtered for horizontal normals, new length: {np.asarray(pcd.points).shape[0]}")
-    o3d.visualization.draw_geometries([pcd])
+    if visualise:
+        o3d.visualization.draw_geometries([pcd])
 
     # Perform dbscan clustering and remove small clusters
     min_cluster_size = 20 # points
@@ -49,7 +53,8 @@ def main():
     pcd = remove_small_clusters(pcd, labels, min_point_count=min_cluster_size)
     rem_small_toc = time.perf_counter()
     print(f"Removed clusters smaller than {min_cluster_size} points in {rem_small_toc-rem_small_tic: 0.4f} seconds")
-    o3d.visualization.draw_geometries([pcd])
+    if visualise:
+        o3d.visualization.draw_geometries([pcd])
 
     # Compute unit normal vectors
     normals = np.asarray(pcd.normals)
@@ -102,8 +107,9 @@ def main():
         for i in range(len(pcd_list)):
             colour = plt.get_cmap("tab20")(i)
             pcd_list[i].paint_uniform_color(list(colour[:3]))
-
-    o3d.visualization.draw_geometries(normal_clusters)
+    
+    if visualise:
+        o3d.visualization.draw_geometries(normal_clusters)
 
 
     # Separate pcds further using dbscan clustering
@@ -114,7 +120,8 @@ def main():
         large_normal_clusters += separated_clusters[:-1] # removes last label which are "noise" points
 
     paint_pcd_list(normal_clusters)
-    o3d.visualization.draw_geometries(large_normal_clusters)
+    if visualise:
+        o3d.visualization.draw_geometries(large_normal_clusters)
 
     # segment planes
     planes = [] 
@@ -146,8 +153,9 @@ def main():
 
     # pcd = pcd.voxel_down_sample(voxel_size=0.05)
     line_sets, boxes = get_bounding_boxes(planes)
-    o3d.visualization.draw_geometries(planes + line_sets + [origin_frame])
-    o3d.visualization.draw_geometries([planes[0], line_sets[0], origin_frame])
+    if visualise:
+        o3d.visualization.draw_geometries(planes + line_sets + [origin_frame])
+        o3d.visualization.draw_geometries([planes[0], line_sets[0], origin_frame])
     # o3d.visualization.draw_geometries(line_sets)
 
     # display frame markers for each box
@@ -159,7 +167,8 @@ def main():
         mesh = o3d.geometry.TriangleMesh.create_coordinate_frame().rotate(rotation).translate(center)
         frame_markers.append(mesh)
 
-    o3d.visualization.draw_geometries(planes + line_sets + [origin_frame] + frame_markers)
+    if visualise:
+        o3d.visualization.draw_geometries(planes + line_sets + [origin_frame] + frame_markers)
 
 
     centers = np.array([box.get_center() for box in boxes])
@@ -172,7 +181,9 @@ def main():
         np.save(f, extents)
     with open('output/rotations.npy', 'wb') as f:
         np.save(f, rotations)
+    
+    print("Initial processing complete.")
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1], visualise=False)
