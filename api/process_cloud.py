@@ -9,7 +9,7 @@ import typing
 import os
 from pcd_operations import dbscan_cluster, remove_small_clusters, get_bounding_boxes, segment_planes, separate_pcd_by_labels, vertical_threshold
 
-def main(pcd_path: typing.Union[str, bytes, os.PathLike], visualise: bool):
+def process(pcd_path: typing.Union[str, bytes, os.PathLike], visualise: bool):
     # Load pcd
     load_tic = time.perf_counter()
     print("Loading pcd")
@@ -175,6 +175,11 @@ def main(pcd_path: typing.Union[str, bytes, os.PathLike], visualise: bool):
     extents = np.array([box.extent for box in boxes])
     rotations = np.array([box.R for box in boxes])
 
+    # save outputs
+    output_dir = 'output'
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
+
     with open('output/centres.npy', 'wb') as f:
         np.save(f, centers)
     with open('output/extents.npy', 'wb') as f:
@@ -182,8 +187,8 @@ def main(pcd_path: typing.Union[str, bytes, os.PathLike], visualise: bool):
     with open('output/rotations.npy', 'wb') as f:
         np.save(f, rotations)
     
-    print("Initial processing complete.")
+    print("Initial processing complete. ")
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], visualise=False)
+    process(sys.argv[1], visualise=False)
