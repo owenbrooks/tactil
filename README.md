@@ -33,3 +33,7 @@ The generated STL file can be found in `output/out.stl`
 3. `flask run --host=0.0.0.0`
 
 The upload form can be found at [http://127.0.0.1:5000](http://127.0.0.1:5000)
+
+### Running the react UI
+1. `cd ui`
+2. `npm start`
