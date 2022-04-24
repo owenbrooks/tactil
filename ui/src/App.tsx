@@ -1,16 +1,14 @@
 import React from 'react';
-import logo from './logo.svg';
 import './App.css';
 import Navbar from './navbar/Navbar';
+import Interface from './interface/Interface';
 
 function App() {
   return (
     <div className="App">
       <header className="App-header">
         <Navbar />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
+        <Interface />
       </header>
     </div>
   );

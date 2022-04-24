@@ -1,33 +1,24 @@
 
 .sidenav {
   height: 100%;
-  width: 160px;
-  position: fixed;
+  width: auto;
   z-index: 1;
   top: 0;
   left: 0;
   background-color: #019592;
-  overflow-x: hidden;
-  /* padding-top: 20px; */
-  /* display: grid; */
-  grid-template-rows: 1fr 1fr 1fr;
-  align-items: center;
 }
 
 .sidenav a {
-  /* padding: 6px 8px 60px 16px; */
   padding: 20px;
   text-decoration: none;
   font-size: 25px;
   color: white;
   display: block;
-  /* align-self: center; */
-  /* border: 1px solid black; */
 }
 
 .sidenav img {
   color: white;
-  width: 70%;
+  width: 80%;
   align-self: center;
 }
 

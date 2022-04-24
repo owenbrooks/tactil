@@ -8,18 +8,7 @@
   align-items: center;
   justify-content: center;
   font-size: calc(10px + 2vmin);
-  grid-template-columns: 50px 1fr;
-  /* e.g. 
-      1fr 1fr
-      minmax(10px, 1fr) 3fr
-      repeat(5, 1fr)
-      50px auto 100px 1fr
-  */
-  grid-template-rows: 1fr;
-  /* e.g. 
-      min-content 1fr min-content
-      100px 1fr max-content
-  */
+  grid-template-columns: 150px 1fr;
 }
 
 .App-link {

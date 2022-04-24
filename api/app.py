@@ -3,9 +3,11 @@ from flask import Flask, flash, request, jsonify,  redirect, url_for, send_from_
 from werkzeug.utils import secure_filename
 from process_cloud import process
 from generate_stl import generate
+from flask_cors import CORS
+from config import secret_key
 
 UPLOAD_FOLDER = './pcd_uploads'
-ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'pcd'}
+ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'pcd', 'stl'}
 MAX_CONTENT_LENGTH = 16 * 1000 * 1000
 OUTPUT_FOLDER = './stl_output'
 
@@ -13,6 +15,8 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 app.debug = True
+app.config['SECRET_KEY'] = secret_key
+CORS(app)
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -57,18 +61,20 @@ def upload_file():
     if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files:
-            flash('No file part')
-            return redirect(request.url)
+            return "File uploaded incorrectly", 400
         file = request.files['file']
         # If the user does not select a file, the browser submits an
         # empty file without a filename.
         if file.filename == '':
-            flash('No selected file')
-            return redirect(request.url)
+            return "No selected file", 400
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            return redirect(url_for('download_file', name=filename))
+            response = redirect(url_for('download_file', name=filename))
+            response.headers.add('Access-Control-Allow-Origin', '*')
+            return response
+        else:
+            return "File type not supported", 400
     return '''
     <!doctype html>
     <title>Upload new File</title>
