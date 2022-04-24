@@ -4,9 +4,10 @@ from werkzeug.utils import secure_filename
 from process_cloud import process
 from generate_stl import generate
 
-UPLOAD_FOLDER = './uploads'
+UPLOAD_FOLDER = './pcd_uploads'
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'pcd'}
 MAX_CONTENT_LENGTH = 16 * 1000 * 1000
+OUTPUT_FOLDER = './stl_output'
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -27,7 +28,7 @@ def process_file():
         return 'Content-Type not supported!'
         
     # TODO: validate filename
-    cloud_path = os.path.join('uploads', json['filename'])
+    cloud_path = os.path.join(UPLOAD_FOLDER, json['filename'])
     box_outputs = process(cloud_path, visualise=False)
 
     resp = jsonify({'message' : 'File successfully processed',
@@ -47,8 +48,7 @@ def generate_model():
     box_outputs = json['box_outputs']
     generate(box_outputs, visualise=False)
 
-    resp = jsonify({'message' : 'File successfully generated',
-                   })
+    resp = jsonify({'message' : 'File successfully generated'})
     resp.status_code = 200
     return resp
 
@@ -82,3 +82,7 @@ def upload_file():
 @app.route('/uploads/<name>')
 def download_file(name):
     return send_from_directory(app.config["UPLOAD_FOLDER"], name)
+
+@app.route('/generate/output')
+def download_output():
+    return send_from_directory(OUTPUT_FOLDER, 'out.stl')

@@ -7,3 +7,4 @@ tmux new-window
 tmux select-window -t 1
 tmux attach-session -d -t $session
 export PS1='${debian_chroot:+($debian_chroot)}\w\$ '
+export FLASK_ENV=development
