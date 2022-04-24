@@ -4,7 +4,7 @@ from werkzeug.utils import secure_filename
 from process_cloud import process
 from generate_stl import generate
 from flask_cors import CORS
-from config import secret_key
+import secrets
 
 UPLOAD_FOLDER = './pcd_uploads'
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'pcd', 'stl'}
@@ -15,7 +15,7 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
 app.debug = True
-app.config['SECRET_KEY'] = secret_key
+app.config['SECRET_KEY'] = secrets.token_urlsafe(16) # re-generates key on every startup. Okay if we don't mind invalidating user's cookies
 CORS(app)
 
 def allowed_file(filename):
