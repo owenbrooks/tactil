@@ -8,7 +8,7 @@ from config import secret_key
 
 UPLOAD_FOLDER = './pcd_uploads'
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'pcd', 'stl'}
-MAX_CONTENT_LENGTH = 16 * 1000 * 1000
+MAX_CONTENT_LENGTH = 16 * 1000 * 1000 * 1000
 OUTPUT_FOLDER = './stl_output'
 
 app = Flask(__name__)
@@ -56,7 +56,7 @@ def generate_model():
     resp.status_code = 200
     return resp
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/upload', methods=['POST'])
 def upload_file():
     if request.method == 'POST':
         # check if the post request has the file part
@@ -70,20 +70,11 @@ def upload_file():
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            response = redirect(url_for('download_file', name=filename))
+            response = redirect(url_for('download_output'))
             response.headers.add('Access-Control-Allow-Origin', '*')
             return response
         else:
             return "File type not supported", 400
-    return '''
-    <!doctype html>
-    <title>Upload new File</title>
-    <h1>Upload new File</h1>
-    <form method=post enctype=multipart/form-data>
-      <input type=file name=file>
-      <input type=submit value=Upload>
-    </form>
-    '''
 
 @app.route('/uploads/<name>')
 def download_file(name):

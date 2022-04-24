@@ -2,7 +2,7 @@ import React, { SyntheticEvent, useState } from 'react';
 import './Interface.css'
 import upload from '../navbar/upload.svg'
 import { useDrag } from 'react-dnd'
-const upload_url = "http://localhost:5000/"
+const upload_url = "http://localhost:5000/upload"
 
 function Interface() {
   const [selectedFile, setSelectedFile] = useState<File>();
@@ -16,11 +16,9 @@ function Interface() {
   };
 
   const handleSubmission = (event: SyntheticEvent) => {
-    console.log(event)
     if (selectedFile != null) {
       const formData = new FormData();
       formData.append("file", selectedFile, selectedFile.name);
-      console.log(formData)
       fetch(upload_url, {
         method: "POST",
         body: formData
@@ -32,9 +30,10 @@ function Interface() {
 
   return (
     <div className="interface">
+      <p>Choose a .pcd file to upload</p>
       <input type="file" name="file" onChange={changeHandler} />
       <div>
-        <button onClick={handleSubmission}>Submit</button>
+        <button onClick={handleSubmission}>Upload</button>
       </div>
       {/* <a href="#upload"><img src={upload} />Upload</a> */}
     </div>
