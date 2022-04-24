@@ -1,0 +1,1 @@
+curl -d '{"filename": "Owen_Scan_20_04_45.pcd"}' -H 'Content-Type: application/json' http://127.0.0.1:5000/process
