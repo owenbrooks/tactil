@@ -3,14 +3,10 @@ import os
 from stl import mesh
 from scipy.spatial.transform import Rotation as R
 
-def main(display):
-    # load data of wall bounding boxes from numpy files
-    with open('output/centres.npy', 'rb') as f:
-        centers_unscaled = np.load(f)
-    with open('output/extents.npy', 'rb') as f:
-        extents_unscaled = np.load(f)
-    with open('output/rotations.npy', 'rb') as f:
-        rotations = np.load(f)
+def generate(box_properties, visualise):
+    centers_unscaled = np.array(box_properties['box_centers'])
+    extents_unscaled = np.array(box_properties['box_extents'])
+    rotations = np.array(box_properties['box_rotations'])
 
     # swap column order since STL expects [x, y, z] while open3D had [x, z, y]
     # centers_unscaled[:, [2, 1]] = centers_unscaled[:, [1, 2]]
@@ -112,7 +108,7 @@ def main(display):
 
     print(f"Saved STL file in {file_path}")
 
-    if display:
+    if visualise:
         display_meshes([combined_mesh])
 
 
@@ -137,4 +133,13 @@ def display_meshes(meshes):
     pyplot.show()
 
 if __name__ == "__main__":
-    main(display=False)
+    # load data of wall bounding boxes from numpy files
+    box_properties = {}
+    with open('output/centres.npy', 'rb') as f:
+        box_properties['centers'] = np.load(f)
+    with open('output/extents.npy', 'rb') as f:
+        box_properties['extents'] = np.load(f)
+    with open('output/rotations.npy', 'rb') as f:
+        box_properties['rotations'] = np.load(f)
+
+    generate(box_properties, visualise=False)

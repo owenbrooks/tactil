@@ -25,8 +25,8 @@ def horizontal_normal_filter(pcd, epsilon):
 # Cluster using dbscan
 def dbscan_cluster(pcd, epsilon, min_points):
     with o3d.utility.VerbosityContextManager(
-            o3d.utility.VerbosityLevel.Debug) as cm:
-        labels = np.array(pcd.cluster_dbscan(eps=epsilon, min_points=min_points, print_progress=True))
+            o3d.utility.VerbosityLevel.Error) as cm:
+        labels = np.array(pcd.cluster_dbscan(eps=epsilon, min_points=min_points, print_progress=False))
         # for an nx3 pcd, labels is nx1 integers, with -1 representing noise points, 
         # and positive ints and 0 indicating which cluster a point belongs to
     max_label = labels.max()

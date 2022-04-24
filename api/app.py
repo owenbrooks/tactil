@@ -2,6 +2,7 @@ import os
 from flask import Flask, flash, request, jsonify,  redirect, url_for, send_from_directory
 from werkzeug.utils import secure_filename
 from process_cloud import process
+from generate_stl import generate
 
 UPLOAD_FOLDER = './uploads'
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'pcd'}
@@ -27,9 +28,27 @@ def process_file():
         
     # TODO: validate filename
     cloud_path = os.path.join('uploads', json['filename'])
-    process(cloud_path, visualise=False)
+    box_outputs = process(cloud_path, visualise=False)
 
-    resp = jsonify({'message' : 'File successfully processed'})
+    resp = jsonify({'message' : 'File successfully processed',
+                    'box_outputs': box_outputs})
+    resp.status_code = 200
+    return resp
+
+@app.route('/generate', methods=['POST'])
+def generate_model():
+    content_type = request.headers.get('Content-Type')
+    if (content_type == 'application/json'):
+        json = request.json
+    else:
+        return 'Content-Type not supported!'
+        
+    # TODO: validate filename
+    box_outputs = json['box_outputs']
+    generate(box_outputs, visualise=False)
+
+    resp = jsonify({'message' : 'File successfully generated',
+                   })
     resp.status_code = 200
     return resp
 

@@ -10,6 +10,7 @@ import os
 from pcd_operations import dbscan_cluster, remove_small_clusters, get_bounding_boxes, segment_planes, separate_pcd_by_labels, vertical_threshold
 
 def process(pcd_path: typing.Union[str, bytes, os.PathLike], visualise: bool):
+    # o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Error)
     # Load pcd
     load_tic = time.perf_counter()
     print("Loading pcd")
@@ -170,25 +171,31 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], visualise: bool):
     if visualise:
         o3d.visualization.draw_geometries(planes + line_sets + [origin_frame] + frame_markers)
 
+    centers = [box.get_center().tolist() for box in boxes]
+    extents = [box.extent.tolist() for box in boxes]
+    rotations = [box.R.tolist() for box in boxes]
 
-    centers = np.array([box.get_center() for box in boxes])
-    extents = np.array([box.extent for box in boxes])
-    rotations = np.array([box.R for box in boxes])
+    outputs = {
+        'box_centers': centers,
+        'box_extents': extents,
+        'box_rotations': rotations,
+    }
 
-    # save outputs
+    print("Initial processing complete.")
+    return outputs 
+
+
+if __name__ == "__main__":
+    outputs = process(sys.argv[1], visualise=False)
+
+    # save outputs to files
     output_dir = 'output'
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
 
     with open('output/centres.npy', 'wb') as f:
-        np.save(f, centers)
+        np.save(f, np.array(outputs['box_centers']))
     with open('output/extents.npy', 'wb') as f:
-        np.save(f, extents)
+        np.save(f, np.array(outputs['box_extents']))
     with open('output/rotations.npy', 'wb') as f:
-        np.save(f, rotations)
-    
-    print("Initial processing complete. ")
-
-
-if __name__ == "__main__":
-    process(sys.argv[1], visualise=False)
+        np.save(f, np.array(outputs['box_rotations']))
