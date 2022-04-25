@@ -3,15 +3,32 @@ import './Navbar.css'
 import upload from './upload.svg'
 import edit from './edit.svg'
 import generate from './generate.svg'
+import { Link, useLocation } from "react-router-dom";
 
 function Navbar() {
   return (
     <div className="sidenav">
-        <a href="#upload"><img src={upload} />Upload</a>
-        <a href="#edit"><img src={edit} />Edit</a>
-        <a href="#generate"><img src={generate} />Generate</a>
+      <NavItem to="/upload"><img src={upload} />Upload</NavItem>
+      <NavItem to="/edit"><img src={edit} />Edit</NavItem>
+      <NavItem to="/generate"><img src={generate} />Generate</NavItem>
     </div>
   );
+}
+
+type NavItemProps = {
+  to: string,
+  children: React.ReactNode;
+}
+function NavItem(props: NavItemProps) {
+  const location = useLocation();
+  
+  const isSelected = location.pathname === props.to;
+
+  return (
+    <div className={'nav-item ' + (isSelected ? 'nav-item-selected' : '')}>
+      <Link to={props.to}>{props.children}</Link>
+    </div>
+  )
 }
 
 export default Navbar;

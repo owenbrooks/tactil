@@ -22,6 +22,10 @@
   align-self: center;
 }
 
-.sidenav a:hover {
+.sidenav .nav-item:hover {
+  background-color: #006462;
+}
+
+.sidenav .nav-item-selected {
   background-color: #006462;
 }
