@@ -1,0 +1,26 @@
+
+.edit-container {
+  display: grid;
+  grid-template-columns: 1fr 3fr;
+}
+
+.edit-frame {
+  height: 80vh;
+  border: 1px solid black;
+  margin: 40px;
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.node {
+  height: 13px;
+  width: 13px;
+  background-color: black;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.node:hover {
+  background-color: #019592;
+}
