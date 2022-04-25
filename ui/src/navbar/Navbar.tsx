@@ -8,9 +8,9 @@ import { Link, useLocation } from "react-router-dom";
 function Navbar() {
   return (
     <div className="sidenav">
-      <NavItem to="/upload"><img src={upload} />Upload</NavItem>
-      <NavItem to="/edit"><img src={edit} />Edit</NavItem>
-      <NavItem to="/generate"><img src={generate} />Generate</NavItem>
+      <NavItem to="/upload"><img src={upload} alt="Upload icon"/>Upload</NavItem>
+      <NavItem to="/edit"><img src={edit} alt="Edit icon"/>Edit</NavItem>
+      <NavItem to="/generate"><img src={generate} alt="Generate icon"/>Generate</NavItem>
     </div>
   );
 }

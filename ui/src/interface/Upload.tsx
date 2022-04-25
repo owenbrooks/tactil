@@ -10,6 +10,8 @@ function Upload() {
     const [selectedFile, setSelectedFile] = useState<File>();
     const [isFilePicked, setIsFilePicked] = useState(false);
     const [uploadFinished, setUploadFinished] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+    const [isProcessing, setIsProcessing] = useState(false);
     const navigate = useNavigate();
 
     const changeHandler = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -26,11 +28,13 @@ function Upload() {
         if (selectedFile != null) {
             const formData = new FormData();
             formData.append("file", selectedFile, selectedFile.name);
+            setIsUploading(true);
             fetch(upload_url, {
                 method: "POST",
                 body: formData
             }).then((value: Response) => {
                 console.log(value)
+                setIsUploading(false);
                 setUploadFinished(value.ok);
             });
         } else {
@@ -41,8 +45,10 @@ function Upload() {
     const handleNext = (_: SyntheticEvent) => {
         if (selectedFile != null) {
             const data = { "filename": selectedFile.name };
+            setIsProcessing(true);
             postData(process_url, data).then((response: ProcessReponse) => {
                 console.log(response)
+                setIsProcessing(false);
                 navigate("/generate", { state: { "box_outputs": response["box_outputs"] } })
             });
         }
@@ -52,12 +58,22 @@ function Upload() {
         <div className="interface">
             <p>Choose a .pcd file to upload</p>
             <input type="file" name="file" onChange={changeHandler} />
-            {isFilePicked && <div>
+            {(isFilePicked && !uploadFinished) && <div>
                 <button onClick={handleSubmission}>Upload</button>
             </div>}
             {uploadFinished && <div>
                 <button onClick={handleNext}>Next</button>
             </div>}
+            {isUploading &&
+                <div>
+                    <p> Uploading... </p>
+                    <div className='lds-dual-ring'></div>
+                </div>}
+            {isProcessing &&
+                <div>
+                    <p> Processing... </p>
+                    <div className='lds-dual-ring'></div>
+                </div>}
         </div>
     );
 }

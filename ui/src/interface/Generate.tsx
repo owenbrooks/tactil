@@ -1,6 +1,5 @@
 import { SyntheticEvent, useState } from 'react';
-import './Interface.css'
-import { Routes, Route, Link, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { LocationState, postData } from '../api';
 const generate_url = "http://localhost:5000/generate"
 
@@ -22,10 +21,10 @@ function Generate() {
 
   return (
     <div className="interface">
-      <p>Generate</p>
       <div>
         <button onClick={handleGenerate}>Generate</button>
       </div>
+      <br />
       {generateFinished && <a href="http://localhost:5000/generate/output" download target="_self">Download</a>}
       {/* <pre>{JSON.stringify(box_outputs, null, 2)}</pre> */}
     </div>
