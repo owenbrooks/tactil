@@ -1,12 +1,15 @@
 import React, { SyntheticEvent, useState } from 'react';
 import './Interface.css'
 import { useNavigate } from "react-router-dom";
-import { ProcessReponse, postData } from '../api';
+import { ProcessReponse, postData, BoxOutputs } from '../api';
 const upload_url = "http://localhost:5000/upload"
 const process_url = "http://localhost:5000/process"
 
+type UploadProps = {
+    setBoxOutputs: React.Dispatch<React.SetStateAction<BoxOutputs | undefined>>
+}
 
-function Upload() {
+function Upload(props: UploadProps) {
     const [selectedFile, setSelectedFile] = useState<File>();
     const [isFilePicked, setIsFilePicked] = useState(false);
     const [uploadFinished, setUploadFinished] = useState(false);
@@ -49,7 +52,8 @@ function Upload() {
             postData(process_url, data).then((response: ProcessReponse) => {
                 console.log(response)
                 setIsProcessing(false);
-                navigate("/generate", { state: { "box_outputs": response["box_outputs"] } })
+                props.setBoxOutputs(response["box_outputs"]);
+                navigate("/generate")
             });
         }
     }
@@ -61,7 +65,7 @@ function Upload() {
             {(isFilePicked && !uploadFinished) && <div>
                 <button onClick={handleSubmission}>Upload</button>
             </div>}
-            {uploadFinished && <div>
+            {uploadFinished && !isProcessing && <div>
                 <button onClick={handleNext}>Next</button>
             </div>}
             {isUploading &&
