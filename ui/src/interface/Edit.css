@@ -11,6 +11,13 @@
   border-radius: 8px;
   position: relative;
   overflow: hidden;
+  user-select: none; /* prevent missing mouse up because text selection was being triggered */
+}
+
+.edit-params button {
+  /* display: block; */
+  margin: 10px;
+  margin-top: 20px;
 }
 
 .node {
@@ -19,6 +26,7 @@
   background-color: black;
   border-radius: 50%;
   display: inline-block;
+  pointer-events: none;
 }
 
 .node:hover {
