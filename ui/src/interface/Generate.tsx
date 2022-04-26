@@ -1,9 +1,9 @@
 import { SyntheticEvent, useState } from 'react';
-import { BoxOutputs, postData } from '../api';
+import { BoxProperties, postData } from '../api';
 const generate_url = "http://localhost:5000/generate"
 
 type GenerateProps = {
-  boxOutputs: BoxOutputs | undefined,
+  boxProperties: BoxProperties | undefined,
 }
 
 function Generate(props: GenerateProps) {
@@ -11,7 +11,7 @@ function Generate(props: GenerateProps) {
   const [generateFinished, setGenerateFinished] = useState(false);
 
   const handleGenerate = (_: SyntheticEvent) => {
-    const data = {"box_outputs": props.boxOutputs};
+    const data = {"box_outputs": props.boxProperties};
     postData(generate_url, data).then(response => {
       console.log(response);
       setGenerateFinished(true);

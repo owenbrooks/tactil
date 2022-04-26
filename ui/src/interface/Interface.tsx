@@ -4,17 +4,17 @@ import Upload from './Upload';
 import Generate from './Generate';
 import Edit from './Edit';
 import { useState } from 'react';
-import { BoxOutputs } from '../api';
+import { BoxProperties } from '../api';
 
 function Interface() {
 
-  const [boxOutputs, setBoxOutputs] = useState<BoxOutputs>();
+  const [boxProperties, setBoxProperties] = useState<BoxProperties>();
 
   return (
       <Routes>
-        <Route path="upload" element={<Upload setBoxOutputs={setBoxOutputs} />} />
-        <Route path="edit" element={<Edit boxOutputs={boxOutputs} setBoxOutputs={setBoxOutputs} />} />
-        <Route path="generate" element={<Generate boxOutputs={boxOutputs}/>} />
+        <Route path="upload" element={<Upload setBoxProperties={setBoxProperties} />} />
+        <Route path="edit" element={<Edit boxProperties={boxProperties} setBoxProperties={setBoxProperties} />} />
+        <Route path="generate" element={<Generate boxProperties={boxProperties}/>} />
         <Route
             path="*"
             element={<Navigate to="/upload" replace />}

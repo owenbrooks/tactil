@@ -1,12 +1,12 @@
 import React, { SyntheticEvent, useState } from 'react';
 import './Interface.css'
 import { useNavigate } from "react-router-dom";
-import { ProcessReponse, postData, BoxOutputs } from '../api';
+import { ProcessReponse, postData, BoxProperties } from '../api';
 const upload_url = "http://localhost:5000/upload"
 const process_url = "http://localhost:5000/process"
 
 type UploadProps = {
-    setBoxOutputs: React.Dispatch<React.SetStateAction<BoxOutputs | undefined>>
+    setBoxProperties: React.Dispatch<React.SetStateAction<BoxProperties | undefined>>
 }
 
 function Upload(props: UploadProps) {
@@ -52,7 +52,7 @@ function Upload(props: UploadProps) {
             postData(process_url, data).then((response: ProcessReponse) => {
                 console.log(response)
                 setIsProcessing(false);
-                props.setBoxOutputs(response["box_outputs"]);
+                props.setBoxProperties(response.box_outputs);
                 navigate("/generate")
             });
         }
