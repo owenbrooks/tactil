@@ -45,7 +45,7 @@ function Upload(props: UploadProps) {
         }
     };
 
-    const handleNext = (_: SyntheticEvent) => {
+    const handleProcess = (_: SyntheticEvent) => {
         if (selectedFile != null) {
             const data = { "filename": selectedFile.name };
             setIsProcessing(true);
@@ -60,13 +60,14 @@ function Upload(props: UploadProps) {
 
     return (
         <div className="interface">
-            <p>Choose a .pcd file to upload</p>
-            <input type="file" name="file" onChange={changeHandler} />
-            {(isFilePicked && !uploadFinished) && <div>
+            {(!isUploading && !isProcessing && !uploadFinished ) && 
+            <><p>Choose a .pcd file to upload</p>
+            <input type="file" name="file" onChange={changeHandler} /></>}
+            {(isFilePicked && !isUploading && !isProcessing && !uploadFinished ) && <div>
                 <button onClick={handleSubmission}>Upload</button>
             </div>}
             {uploadFinished && !isProcessing && <div>
-                <button onClick={handleNext}>Next</button>
+                <button onClick={handleProcess}>Process</button>
             </div>}
             {isUploading &&
                 <div>

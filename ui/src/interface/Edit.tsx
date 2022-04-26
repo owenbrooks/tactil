@@ -38,10 +38,12 @@ function worldToPixel(worldCoord: Coordinate, pixelOffset: Coordinate, zoomLevel
 
 function Edit(props: EditProps) {
 
-  const defaultNodes: Record<number, Coordinate> = { 0: { x: 0.0, y: 0.0 }, 1: { x: 10.0, y: 10.0 } };
+  const defaultNodes: Record<number, Coordinate> = { 0: { x: 0.0, y: 0.0 }, 1: { x: 10.0, y: 10.0 }, 2: {x: -5, y:-8}, 3:{x: -10, y:5} };
+  const defaultEdges: Record<number, [number, number]> = { 0: [0, 1], 1: [0, 2], 2: [2, 3] };
+  const [nodes, setNodes] = useState<Record<number, Coordinate>>(defaultNodes);
+  const [edges, setEdges] = useState<Record<number, [number, number]>>(defaultEdges);
   const defaultZoom = 1.0;
   const [zoomLevel, setZoomLevel] = useState(defaultZoom);
-  const [nodes, setNodes] = useState<Record<number, Coordinate>>(defaultNodes);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [savedPanOffset, setSavedPanOffset] = useState({ x: 0, y: 0 });
   const [livePanOffset, setLivePanOffset] = useState({ x: 0, y: 0 });
@@ -58,7 +60,6 @@ function Edit(props: EditProps) {
         x: e.nativeEvent.offsetX - width / 2,
         y: e.nativeEvent.offsetY - height / 2,
       }
-      const worldCoord = pixelToWorld(pixelCoord, { x: 0, y: 0 }, zoomLevel);
 
       setMousePos(pixelCoord);
 
@@ -116,16 +117,52 @@ function Edit(props: EditProps) {
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
       >
-        {Object.keys(nodes).map((nodeId) => {
-          const combinedPanOffset = {
-            x: livePanOffset.x + savedPanOffset.x,
-            y: livePanOffset.y + savedPanOffset.y,
-          };
-          const { x, y } = worldToPixel(nodes[parseInt(nodeId)], combinedPanOffset, zoomLevel);
-          const left = 'calc(' + x + 'px + 50%)';
-          const top = 'calc(' + y + 'px + 50%';
-          return <div className='node' style={{ left: left, top: top, position: 'absolute' }} key={nodeId} ></div>
-        })}
+        <>
+          {Object.keys(nodes).map((nodeId) => {
+            const combinedPanOffset = {
+              x: livePanOffset.x + savedPanOffset.x,
+              y: livePanOffset.y + savedPanOffset.y,
+            };
+            const { x, y } = worldToPixel(nodes[parseInt(nodeId)], combinedPanOffset, zoomLevel);
+            const left = 'calc(' + x + 'px + 50%)';
+            const top = 'calc(' + y + 'px + 50%';
+            return <div className='node' style={{ left: left, top: top, position: 'absolute' }} key={nodeId} ></div>
+          })}
+          {Object.keys(edges).map((edgeId) => {
+            const edge = edges[parseInt(edgeId)];
+            const nodeA = nodes[edge[0]];
+            const nodeB = nodes[edge[1]];
+
+            const averagePos = {
+              x: (nodeA.x + nodeB.x) / 2,
+              y: (nodeA.y + nodeB.y) / 2
+            };
+            const combinedPanOffset = {
+              x: livePanOffset.x + savedPanOffset.x,
+              y: livePanOffset.y + savedPanOffset.y,
+            };
+            const averagePosPixel = worldToPixel(averagePos, combinedPanOffset, zoomLevel);
+            const length = Math.sqrt((nodeA.x - nodeB.x) ** 2 + (nodeA.y - nodeB.y) ** 2)*zoomLevel/pixelToWorldFactor;
+            const thickness = 4;
+            const angle = Math.atan2((nodeB.y-nodeA.y),(nodeB.x-nodeA.x))*(180/Math.PI);
+            return <div key={edgeId} style={{
+              padding: '0px', 
+              margin: '0px', 
+              height: thickness + 'px', 
+              width: length + 'px',
+              backgroundColor:"black", 
+              lineHeight:'1px', 
+              position:'absolute', 
+              left: "calc(" + averagePosPixel.x + "px + 50%)", 
+              top: "calc(" + averagePosPixel.y.toString() + "px + 50%)", 
+              // ['MozTransform' as any]: 'rotate(' + -angle + 'deg) translate(-50%, -50%)',
+              // ['WebkitTransform' as any]: 'rotate(' + -angle + 'deg); translate(-50%, -50%)',
+              // ['MsTransform' as any]: 'rotate(' + -angle + 'deg) translate(-50%, -50%)',
+              transform: "translate(-50%, -50%) rotate(" + angle + "deg) ",
+            }}> </div>
+              //  -moz-transform:rotate(" + angle + "deg); -webkit-transform:rotate(" + angle + "deg); -o-transform:rotate(" + angle + "deg); -ms-transform:rotate(" + angle + "deg); transform:rotate(" + angle + "deg);' />
+          })}
+        </>
       </div>
       {/* <pre>{JSON.stringify(props.boxOutputs, null, 2)}</pre> */}
     </div>

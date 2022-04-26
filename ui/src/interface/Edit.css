@@ -27,6 +27,7 @@
   border-radius: 50%;
   display: inline-block;
   pointer-events: none;
+  transform: translate(-50%, -50%);
 }
 
 .node:hover {
