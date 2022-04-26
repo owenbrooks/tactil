@@ -1,21 +1,16 @@
-import { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import './Interface.css'
-import { BoxOutputs } from '../api';
+import { BoxProperties, Coordinate, boxParamsToGraph } from '../api';
 import './Edit.css'
 
 type EditProps = {
-  boxOutputs: BoxOutputs | undefined,
-  setBoxOutputs: React.Dispatch<React.SetStateAction<BoxOutputs | undefined>>
+  boxProperties: BoxProperties | undefined,
+  setBoxProperties: React.Dispatch<React.SetStateAction<BoxProperties | undefined>>
 }
 
-const minZoom = 0.3;
+const minZoom = 0.1;
 const maxZoom = 50;
 const pixelToWorldFactor = 0.1;
-
-type Coordinate = {
-  x: number,
-  y: number,
-}
 
 function pixelToWorld(pixelCoord: Coordinate, pixelOffset: Coordinate, zoomLevel: number) {
   const x = pixelToWorldFactor * (pixelCoord.x - pixelOffset.x) / zoomLevel;
@@ -38,10 +33,11 @@ function worldToPixel(worldCoord: Coordinate, pixelOffset: Coordinate, zoomLevel
 
 function Edit(props: EditProps) {
 
-  const defaultNodes: Record<number, Coordinate> = { 0: { x: 0.0, y: 0.0 }, 1: { x: 10.0, y: 10.0 }, 2: {x: -5, y:-8}, 3:{x: -10, y:5} };
-  const defaultEdges: Record<number, [number, number]> = { 0: [0, 1], 1: [0, 2], 2: [2, 3] };
-  const [nodes, setNodes] = useState<Record<number, Coordinate>>(defaultNodes);
-  const [edges, setEdges] = useState<Record<number, [number, number]>>(defaultEdges);
+  const graph = boxParamsToGraph(props.boxProperties);
+  const [nodes, setNodes] = useState<Record<number, Coordinate>>(graph.nodes);
+  const [edges, setEdges] = useState<Record<number, [number, number]>>(graph.edges);
+
+  // Zooming, panning and mouse variables
   const defaultZoom = 1.0;
   const [zoomLevel, setZoomLevel] = useState(defaultZoom);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -49,16 +45,15 @@ function Edit(props: EditProps) {
   const [livePanOffset, setLivePanOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStartPos, setPanStartPos] = useState({ x: 0, y: 0 });
+  const editDivRef = useRef<HTMLDivElement>(null);
 
+  // Zooming, panning and mouse controls
   function handleMouseMove(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
     const editFrameElem = document.getElementById('edit-frame');
     if (editFrameElem != null) {
-      const height = editFrameElem.clientHeight;
-      const width = editFrameElem.clientWidth;
-
       const pixelCoord = {
-        x: e.nativeEvent.offsetX - width / 2,
-        y: e.nativeEvent.offsetY - height / 2,
+        x: e.nativeEvent.offsetX - editFrameElem.clientWidth / 2,
+        y: e.nativeEvent.offsetY - editFrameElem.clientHeight / 2,
       }
 
       setMousePos(pixelCoord);
@@ -69,12 +64,12 @@ function Edit(props: EditProps) {
     }
     // console.log("mouse pos", mousePos);
   }
-
   function handleMouseDown() {
+    // start panning
     setPanStartPos(mousePos)
     setIsPanning(true);
   }
-  function handleMouseUp() {
+  function finishPanning() {
     setIsPanning(false);
     setSavedPanOffset({
       x: livePanOffset.x + savedPanOffset.x,
@@ -84,40 +79,64 @@ function Edit(props: EditProps) {
       x: 0, y: 0,
     });
   }
-  function resetZoom() {
-    setZoomLevel(defaultZoom);
+  function handleMouseUp() {
+    finishPanning();
   }
-  function resetPan() {
-    setSavedPanOffset({ x: 0, y: 0 });
-  }
-
-  const onScroll = (e: React.WheelEvent<HTMLDivElement>) => {
-    const delta = e.deltaY * -0.002;
-    const newZoom = zoomLevel + delta;
-    if (newZoom < minZoom) {
-      setZoomLevel(minZoom);
-    } else if (newZoom > maxZoom) {
-      setZoomLevel(maxZoom);
-    } else {
-      setZoomLevel(newZoom);
+  function handleMouseLeave() {
+    finishPanning();
+    if (editDivRef && editDivRef.current) {
+      // Register our custom handleWheel function to prevent scrolling when mouse is over the edit div
+      editDivRef.current.removeEventListener('wheel', handleWheel, false)
     }
+  }
+  function handleMouseEnter() {
+    if (editDivRef && editDivRef.current) {
+      // Unregister our custom handleWheel function that prevents scrolling when mouse is over the edit div
+      editDivRef.current.addEventListener('wheel', handleWheel, { passive: false })
+    }
+  }
+  function handleWheel(this: HTMLDivElement, e: WheelEvent): any {
+    e.preventDefault() // stops from scrolling the rest of the page
+
+    // Set the new zoom level based on amount scrolled
+    // Specifically uses the functional update method rather than just setZoomLevel(newZoom),
+    // since this avoids the issue of the state becoming stale. 
+    // See https://stackoverflow.com/questions/55265255/react-usestate-hook-event-handler-using-initial-state 
+    setZoomLevel(oldZoom => {
+      const delta = e.deltaY * -0.0008;
+      const proposedZoom = oldZoom + delta;
+      let newZoom;
+      if (proposedZoom < minZoom) {
+        newZoom = minZoom;
+      } else if (proposedZoom > maxZoom) {
+        newZoom = maxZoom;
+      } else {
+        newZoom = proposedZoom;
+      }
+      return newZoom;
+    });
   };
 
   return (
     <div className="edit-container">
       <div className='edit-params'>
         <p>Edit</p>
-        <button onClick={resetZoom}>Reset zoom</button>
-        <button onClick={resetPan}>Reset pan</button>
+        <button onClick={() => { setZoomLevel(defaultZoom); }}>Reset zoom</button>
+        <button onClick={() => { setSavedPanOffset({ x: 0, y: 0 }); }}>Reset pan</button>
+        <pre>{JSON.stringify(livePanOffset, null, 2)}</pre>
+        <pre>{JSON.stringify(savedPanOffset, null, 2)}</pre>
+        <pre>{JSON.stringify(props.boxProperties, null, 2)}</pre>
+
       </div>
-      <div className='edit-frame' id="edit-frame"
-        onWheelCapture={onScroll}
+      <div className='edit-frame' id="edit-frame" ref={editDivRef}
         onMouseMove={handleMouseMove}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+        onMouseEnter={handleMouseEnter}
       >
         <>
+          {/* Nodes (circles)*/}
           {Object.keys(nodes).map((nodeId) => {
             const combinedPanOffset = {
               x: livePanOffset.x + savedPanOffset.x,
@@ -128,6 +147,7 @@ function Edit(props: EditProps) {
             const top = 'calc(' + y + 'px + 50%';
             return <div className='node' style={{ left: left, top: top, position: 'absolute' }} key={nodeId} ></div>
           })}
+          {/* Edges (lines)*/}
           {Object.keys(edges).map((edgeId) => {
             const edge = edges[parseInt(edgeId)];
             const nodeA = nodes[edge[0]];
@@ -142,29 +162,27 @@ function Edit(props: EditProps) {
               y: livePanOffset.y + savedPanOffset.y,
             };
             const averagePosPixel = worldToPixel(averagePos, combinedPanOffset, zoomLevel);
-            const length = Math.sqrt((nodeA.x - nodeB.x) ** 2 + (nodeA.y - nodeB.y) ** 2)*zoomLevel/pixelToWorldFactor;
+            const length = Math.sqrt((nodeA.x - nodeB.x) ** 2 + (nodeA.y - nodeB.y) ** 2) * zoomLevel / pixelToWorldFactor;
             const thickness = 4;
-            const angle = Math.atan2((nodeB.y-nodeA.y),(nodeB.x-nodeA.x))*(180/Math.PI);
-            return <div key={edgeId} style={{
-              padding: '0px', 
-              margin: '0px', 
-              height: thickness + 'px', 
+            const angle = Math.atan2((nodeB.y - nodeA.y), (nodeB.x - nodeA.x)) * (180 / Math.PI);
+            return <div key={edgeId} className="edge" style={{
+              padding: '0px',
+              margin: '0px',
+              height: thickness + 'px',
               width: length + 'px',
-              backgroundColor:"black", 
-              lineHeight:'1px', 
-              position:'absolute', 
-              left: "calc(" + averagePosPixel.x + "px + 50%)", 
-              top: "calc(" + averagePosPixel.y.toString() + "px + 50%)", 
+              backgroundColor: "black",
+              lineHeight: '1px',
+              position: 'absolute',
+              left: "calc(" + averagePosPixel.x + "px + 50%)",
+              top: "calc(" + averagePosPixel.y.toString() + "px + 50%)",
               // ['MozTransform' as any]: 'rotate(' + -angle + 'deg) translate(-50%, -50%)',
               // ['WebkitTransform' as any]: 'rotate(' + -angle + 'deg); translate(-50%, -50%)',
               // ['MsTransform' as any]: 'rotate(' + -angle + 'deg) translate(-50%, -50%)',
               transform: "translate(-50%, -50%) rotate(" + angle + "deg) ",
             }}> </div>
-              //  -moz-transform:rotate(" + angle + "deg); -webkit-transform:rotate(" + angle + "deg); -o-transform:rotate(" + angle + "deg); -ms-transform:rotate(" + angle + "deg); transform:rotate(" + angle + "deg);' />
           })}
         </>
       </div>
-      {/* <pre>{JSON.stringify(props.boxOutputs, null, 2)}</pre> */}
     </div>
   );
 }
