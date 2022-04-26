@@ -8,6 +8,9 @@ import matplotlib.pyplot as plt
 import typing
 import os
 from pcd_operations import dbscan_cluster, remove_small_clusters, get_bounding_boxes, segment_planes, separate_pcd_by_labels, vertical_threshold
+from scipy import stats
+from scipy.spatial.transform import Rotation as R
+import math
 
 def process(pcd_path: typing.Union[str, bytes, os.PathLike], z_index=1, visualise=False):
     # o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Error)
@@ -21,7 +24,7 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], z_index=1, visualis
     # Create coordinate frame for visualisation
     origin_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.6, origin=[0, 0, 0])
 
-    # Switch axes
+    # Switch vertical axis if specified
     if z_index != 2:
         pcd_points = np.asarray(pcd.points)
         pcd_normals = np.asarray(pcd.normals)
@@ -30,6 +33,7 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], z_index=1, visualis
         pcd.points = o3d.cpu.pybind.utility.Vector3dVector(pcd_points)
         pcd.normals = o3d.cpu.pybind.utility.Vector3dVector(pcd_normals)
 
+    # Switch x and y axis
     pcd_points = np.asarray(pcd.points)
     pcd_normals = np.asarray(pcd.normals)
     pcd_points[:, [0, 1]] = pcd_points[:, [1, 0]] 
@@ -109,6 +113,20 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], z_index=1, visualis
     # ])
     # fig.show()
 
+    # Rotate pcd to align with primary direction
+    most_common_label = stats.mode(labels).mode 
+    biggest_normal_cluster = unit_normals[labels == most_common_label]
+    primary_normal_direction = np.mean(biggest_normal_cluster, axis=0)
+    z_angle = math.atan2(primary_normal_direction[1], primary_normal_direction[0]) + np.pi/2
+    rotation_matrix = np.linalg.inv(R.from_euler('xyz', [0, 0, z_angle]).as_matrix())
+    pcd.rotate(rotation_matrix)
+    print("Rotated to primary normal direction")
+    primary_cluster_indices = np.arange(len(np.asarray(pcd.points)))[labels == most_common_label]
+    cluster = pcd.select_by_index(primary_cluster_indices)
+    cluster.paint_uniform_color([1, 0.706, 0])
+    if visualise:
+        o3d.visualization.draw_geometries([pcd, cluster])
+
     # Separate pcd based on normal direction
     normal_clusters = []
     for i in range(len(labels_unique)):
@@ -116,7 +134,6 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], z_index=1, visualis
         current_cluster_indices = np.arange(len(np.asarray(pcd.points)))[current_cluster_mask]
         cluster = pcd.select_by_index(current_cluster_indices)
         normal_clusters.append(cluster)
-
 
     # Paint point cloud according to cluster
     def paint_pcd_list(pcd_list):
@@ -188,7 +205,7 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], z_index=1, visualis
 
     centers = [box.get_center().tolist() for box in boxes]
     extents = [box.extent.tolist() for box in boxes]
-    rotations = [np.linalg.inv(box.R).tolist() for box in boxes]
+    # rotations = [np.linalg.inv(box.R).tolist() for box in boxes]
     rotations = [box.R.tolist() for box in boxes]
     # centers = [boxes[0].get_center()]
     # extents = [boxes[0].extent.tolist() ]
