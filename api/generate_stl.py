@@ -8,13 +8,11 @@ def generate(box_properties, visualise):
     extents_unscaled = np.array(box_properties['box_extents'])
     rotations = np.array(box_properties['box_rotations'])
 
-    # swap column order since STL expects [x, y, z] while open3D had [x, z, y]
-    # centers_unscaled[:, [2, 1]] = centers_unscaled[:, [1, 2]]
-    # extents_unscaled[:, [2, 1]] = extents_unscaled[:, [1, 2]]
-
     # scale dimensions down to model size
     model_scale_factor = 1/120
     meters_to_mm = 1000
+    # model_scale_factor = 1
+    # meters_to_mm = 1
     centers = centers_unscaled * model_scale_factor * meters_to_mm
     extents = extents_unscaled * model_scale_factor * meters_to_mm
 
@@ -53,6 +51,7 @@ def generate(box_properties, visualise):
         vert[:, 2] *= wall_height / 2
         vert[:, 2] += wall_height / 2
         wall_thickness = 2.5 # mm
+        wall_thickness = 2.5 # mm
         extent[1] = wall_thickness # TODO: remove this / make a minimum
         vert[:, 0:2] *= extent[0:2]/2 # apply scale in x and y directions
 
@@ -62,7 +61,7 @@ def generate(box_properties, visualise):
         # euler_r[2] = euler_r[1].copy() # switch y and z axes (open3d convention vs STL) so that z becomes vertical
         euler_r[0] = 0 # zero out x axis rotation
         euler_r[1] = 0 # zero out y axis rotation
-        r = R.from_euler('xyz', euler_r)
+        r = R.from_euler('xyz', -euler_r)
         xy_rot = r.as_matrix()
         vert_rotated = vert @ xy_rot
 
@@ -103,7 +102,7 @@ def generate(box_properties, visualise):
 
     # combine walls and floor into single mesh to print
     combined_mesh = mesh.Mesh(np.concatenate([cube.data for cube in box_meshes] + [floor_mesh.data]))
-    file_path = os.path.join('output', 'out.stl')
+    file_path = os.path.join('stl_output', 'out.stl')
     combined_mesh.save(file_path)
 
     print(f"Saved STL file in {file_path}")
@@ -136,10 +135,10 @@ if __name__ == "__main__":
     # load data of wall bounding boxes from numpy files
     box_properties = {}
     with open('output/centres.npy', 'rb') as f:
-        box_properties['centers'] = np.load(f)
+        box_properties['box_centers'] = np.load(f)
     with open('output/extents.npy', 'rb') as f:
-        box_properties['extents'] = np.load(f)
+        box_properties['box_extents'] = np.load(f)
     with open('output/rotations.npy', 'rb') as f:
-        box_properties['rotations'] = np.load(f)
+        box_properties['box_rotations'] = np.load(f)
 
-    generate(box_properties, visualise=False)
+    generate(box_properties, visualise=True)

@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 # Max vertical threhold
 def vertical_threshold(pcd, threshold_height):
     points = np.asarray(pcd.points)
-    remaining = points[:, 1] < threshold_height
+    remaining = points[:, 2] < threshold_height
     pcd = pcd.select_by_index(np.arange(len(remaining))[remaining])
     print(np.asarray(pcd.points).shape)
     return pcd

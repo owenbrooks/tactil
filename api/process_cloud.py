@@ -9,7 +9,7 @@ import typing
 import os
 from pcd_operations import dbscan_cluster, remove_small_clusters, get_bounding_boxes, segment_planes, separate_pcd_by_labels, vertical_threshold
 
-def process(pcd_path: typing.Union[str, bytes, os.PathLike], visualise: bool):
+def process(pcd_path: typing.Union[str, bytes, os.PathLike], z_index=1, visualise=False):
     # o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Error)
     # Load pcd
     load_tic = time.perf_counter()
@@ -20,6 +20,22 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], visualise: bool):
 
     # Create coordinate frame for visualisation
     origin_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.6, origin=[0, 0, 0])
+
+    # Switch axes
+    if z_index != 2:
+        pcd_points = np.asarray(pcd.points)
+        pcd_normals = np.asarray(pcd.normals)
+        pcd_points[:, [2, z_index]] = pcd_points[:, [z_index, 2]] 
+        pcd_normals[:, [2, z_index]] = pcd_normals[:, [z_index, 2]] 
+        pcd.points = o3d.cpu.pybind.utility.Vector3dVector(pcd_points)
+        pcd.normals = o3d.cpu.pybind.utility.Vector3dVector(pcd_normals)
+
+    pcd_points = np.asarray(pcd.points)
+    pcd_normals = np.asarray(pcd.normals)
+    pcd_points[:, [0, 1]] = pcd_points[:, [1, 0]] 
+    pcd_normals[:, [1, 0]] = pcd_normals[:, [0, 1]] 
+    pcd.points = o3d.cpu.pybind.utility.Vector3dVector(pcd_points)
+    pcd.normals = o3d.cpu.pybind.utility.Vector3dVector(pcd_normals)
 
     # Remove roof
     max_height = 2.2
@@ -38,8 +54,7 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], visualise: bool):
     # Filter out for only points that have close to horizontal normals
     normals = np.asarray(pcd.normals)
     vertical = np.array([0.0, 0.0, 0.0])
-    z_index = 2
-    vertical[z_index] = 1.0
+    vertical[2] = 1.0
     dot = np.array([np.dot(vertical, norm) for norm in normals])
     horz_norms = np.arange(len(dot))[np.abs(dot)<0.2]
     pcd = pcd.select_by_index(horz_norms)
@@ -146,7 +161,7 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], visualise: bool):
     # Flatten into 2D and downsample again
     def flatten(pcd):
         points = np.asarray(pcd.points)
-        points[:, z_index] = 0.0 # flatten
+        points[:, 2] = 0.0 # flatten in z direction
         pcd.points = o3d.utility.Vector3dVector(points)
 
     for cloud in planes:
@@ -155,7 +170,7 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], visualise: bool):
     # pcd = pcd.voxel_down_sample(voxel_size=0.05)
     line_sets, boxes = get_bounding_boxes(planes)
     if visualise:
-        o3d.visualization.draw_geometries(planes + line_sets + [origin_frame])
+        # o3d.visualization.draw_geometries(planes + line_sets + [origin_frame])
         o3d.visualization.draw_geometries([planes[0], line_sets[0], origin_frame])
     # o3d.visualization.draw_geometries(line_sets)
 
@@ -173,8 +188,11 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], visualise: bool):
 
     centers = [box.get_center().tolist() for box in boxes]
     extents = [box.extent.tolist() for box in boxes]
+    rotations = [np.linalg.inv(box.R).tolist() for box in boxes]
     rotations = [box.R.tolist() for box in boxes]
-
+    # centers = [boxes[0].get_center()]
+    # extents = [boxes[0].extent.tolist() ]
+    # rotations = [np.linalg.inv(boxes[0].R).tolist()]
     outputs = {
         'box_centers': centers,
         'box_extents': extents,
@@ -186,7 +204,11 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], visualise: bool):
 
 
 if __name__ == "__main__":
-    outputs = process(sys.argv[1], visualise=False)
+    visualise = False
+    if len(sys.argv) > 2:
+        visualise = sys.argv[2] == "visualise"
+
+    outputs = process(sys.argv[1], visualise=visualise)
 
     # save outputs to files
     output_dir = 'output'
