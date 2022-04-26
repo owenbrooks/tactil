@@ -7,7 +7,7 @@ export type ProcessReponse = {
 export type BoxProperties = {
     box_centers: Array<[number, number, number]>,
     box_extents: Array<[number, number, number]>,
-    box_rotations: Array<[number, number, number]>,
+    box_rotations: Array<[[number, number, number], [number, number, number], [number, number, number]]>,
 };
 
 export type LocationState = {
@@ -42,24 +42,58 @@ type Graph = {
 };
 
 export function boxParamsToGraph(boxProperties: BoxProperties | undefined): Graph {
-    // if (boxProperties === undefined) {
-    //     return {
-    //         nodes: {},
-    //         edges: {}
-    //     }
-    // }
+    if (boxProperties === undefined) {
+        return {
+            nodes: {},
+            edges: {}
+        }
+    }
 
-    // for (let box in boxProperties.box_centers) {
-    //     const centers = boxProperties.box_centers[box];
-    //     const extents = boxProperties.box_extents[box];
-    //     const rotations = boxProperties.box_rotations[box];
-    // }
-    // console.log(boxProperties)
-    const defaultNodes: Record<number, Coordinate> = { 0: { x: 0.0, y: 0.0 }, 1: { x: 10.0, y: 10.0 }, 2: { x: -5, y: -8 }, 3: { x: -10, y: 5 } };
-    const defaultEdges: Record<number, [number, number]> = { 0: [0, 1], 1: [0, 2], 2: [2, 3] };
+    const apply_z_rot = (point: [number, number], angle_rad: number): Coordinate => {
+        const cos_theta = Math.cos(angle_rad);
+        const sin_theta = Math.sin(angle_rad);
+        const x = point[0]*cos_theta + point[1]*sin_theta;
+        const y = point[0]*sin_theta - point[1]*cos_theta;
+        return {
+            x: x,
+            y: y,
+        }
+    }
+
+    const apply_translation = (coord: Coordinate, translation: Coordinate) => {
+        return {
+            x: coord.x + translation.x,
+            y: coord.y + translation.y,
+        }
+    }
+
+    const nodes: Record<number, Coordinate> = {}
+    const edges: Record<number, [number, number]> = {};
+
+    for (let box in boxProperties.box_centers) {
+        const center = boxProperties.box_centers[box];
+        const extent = boxProperties.box_extents[box];
+        const rotation = boxProperties.box_rotations[box];
+
+        const z_rot_euler = Math.atan2(rotation[1][0], rotation[0][0]);
+        const nodeAAtOrigin = apply_z_rot([-extent[0], 0], z_rot_euler);
+        const nodeBAtOrigin = apply_z_rot([extent[0], 0], z_rot_euler);
+        const centre = {
+            x: center[0],
+            y: center[1],
+        }
+        const nodeA = apply_translation(nodeAAtOrigin, centre);
+        const nodeB = apply_translation(nodeBAtOrigin, centre);
+        
+        const indexA = Object.keys(nodes).length;
+        const indexB = indexA + 1;
+        nodes[indexA] = nodeA;
+        nodes[indexB] = nodeB;
+        edges[Object.keys(edges).length] = [indexA, indexB];
+    }
 
     return {
-        nodes: defaultNodes,
-        edges: defaultEdges,
+        nodes: nodes,
+        edges: edges,
     }
 }
