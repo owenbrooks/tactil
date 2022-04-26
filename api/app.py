@@ -1,5 +1,5 @@
 import os
-from flask import Flask, flash, request, jsonify,  redirect, url_for, send_from_directory
+from flask import Flask, make_response, request, jsonify,  send_from_directory
 from werkzeug.utils import secure_filename
 from process_cloud import process
 from generate_stl import generate
@@ -70,7 +70,7 @@ def upload_file():
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            response = redirect(url_for('download_output'))
+            response = make_response('')
             response.headers.add('Access-Control-Allow-Origin', '*')
             return response
         else:
