@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import './Interface.css'
-import { BoxProperties, Coordinate, boxParamsToGraph } from '../api';
+import { BoxProperties, Coordinate, boxParamsToGraph, PIXEL_TO_WORLD_FACTOR, NODE_RADIUS_PX } from '../api';
 import './Edit.css'
 
 type EditProps = {
@@ -10,11 +10,10 @@ type EditProps = {
 
 const minZoom = 0.1;
 const maxZoom = 50;
-const pixelToWorldFactor = 0.1;
 
 function pixelToWorld(pixelCoord: Coordinate, pixelOffset: Coordinate, zoomLevel: number) {
-  const x = pixelToWorldFactor * (pixelCoord.x - pixelOffset.x) / zoomLevel;
-  const y = pixelToWorldFactor * (pixelCoord.y - pixelOffset.x) / zoomLevel;
+  const x = PIXEL_TO_WORLD_FACTOR * (pixelCoord.x - pixelOffset.x) / zoomLevel;
+  const y = PIXEL_TO_WORLD_FACTOR * (pixelCoord.y - pixelOffset.x) / zoomLevel;
 
   return {
     x: x,
@@ -23,11 +22,11 @@ function pixelToWorld(pixelCoord: Coordinate, pixelOffset: Coordinate, zoomLevel
 }
 
 function worldToPixel(worldCoord: Coordinate, pixelOffset: Coordinate, zoomLevel: number) {
-  const x = worldCoord.x * zoomLevel / pixelToWorldFactor + pixelOffset.x;
-  const y = worldCoord.y * zoomLevel / pixelToWorldFactor + pixelOffset.y;
+  const x = worldCoord.x * zoomLevel / PIXEL_TO_WORLD_FACTOR + pixelOffset.x;
+  const y = worldCoord.y * zoomLevel / PIXEL_TO_WORLD_FACTOR + pixelOffset.y;
   return {
     x: x,
-    y: y,
+    y: -y, // negative y since pixel coordinate system is reversed
   }
 }
 
@@ -125,7 +124,7 @@ function Edit(props: EditProps) {
         <button onClick={() => { setSavedPanOffset({ x: 0, y: 0 }); }}>Reset pan</button>
         <pre>{JSON.stringify(livePanOffset, null, 2)}</pre>
         <pre>{JSON.stringify(savedPanOffset, null, 2)}</pre>
-        <pre>{JSON.stringify(props.boxProperties, null, 2)}</pre>
+        {/* <pre>{JSON.stringify(props.boxProperties, null, 2)}</pre> */}
 
       </div>
       <div className='edit-frame' id="edit-frame" ref={editDivRef}
@@ -140,7 +139,7 @@ function Edit(props: EditProps) {
           {Object.keys(nodes).map((nodeId) => {
             const combinedPanOffset = {
               x: livePanOffset.x + savedPanOffset.x,
-              y: livePanOffset.y + savedPanOffset.y,
+              y: -livePanOffset.y - savedPanOffset.y, // negative because of reversed y coordinate frame
             };
             const { x, y } = worldToPixel(nodes[parseInt(nodeId)], combinedPanOffset, zoomLevel);
             const left = 'calc(' + x + 'px + 50%)';
@@ -159,12 +158,12 @@ function Edit(props: EditProps) {
             };
             const combinedPanOffset = {
               x: livePanOffset.x + savedPanOffset.x,
-              y: livePanOffset.y + savedPanOffset.y,
+              y: -livePanOffset.y - savedPanOffset.y, // negative because of reversed y coordinate frame
             };
             const averagePosPixel = worldToPixel(averagePos, combinedPanOffset, zoomLevel);
-            const length = Math.sqrt((nodeA.x - nodeB.x) ** 2 + (nodeA.y - nodeB.y) ** 2) * zoomLevel / pixelToWorldFactor;
+            const length = Math.sqrt((nodeA.x - nodeB.x) ** 2 + (nodeA.y - nodeB.y) ** 2) * zoomLevel / PIXEL_TO_WORLD_FACTOR;
             const thickness = 4;
-            const angle = Math.atan2((nodeB.y - nodeA.y), (nodeB.x - nodeA.x)) * (180 / Math.PI);
+            const angle = Math.atan2(-(nodeB.y - nodeA.y), (nodeB.x - nodeA.x)) * (180 / Math.PI); // negative because of reversed y coordinate frame
             return <div key={edgeId} className="edge" style={{
               padding: '0px',
               margin: '0px',

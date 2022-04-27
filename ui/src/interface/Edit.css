@@ -39,8 +39,12 @@
 
 .node:hover {
   background-color: #019592;
+  z-index: 10;
 }
 
 .edge {
   pointer-events: none;
+}
+.edge:hover {
+  background-color: #019592;
 }

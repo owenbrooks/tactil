@@ -41,6 +41,10 @@ type Graph = {
     edges: Record<number, [number, number]>,
 };
 
+export const PIXEL_TO_WORLD_FACTOR = 0.1;
+export const NODE_RADIUS_PX = 13/2; // TODO: set this radius in js instead of css
+export const NODE_RADIUS_WORLD = NODE_RADIUS_PX * PIXEL_TO_WORLD_FACTOR;
+
 export function boxParamsToGraph(boxProperties: BoxProperties | undefined): Graph {
     if (boxProperties === undefined) {
         return {
@@ -76,8 +80,9 @@ export function boxParamsToGraph(boxProperties: BoxProperties | undefined): Grap
         const rotation = boxProperties.box_rotations[box];
 
         const z_rot_euler = Math.atan2(rotation[1][0], rotation[0][0]);
-        const nodeAAtOrigin = apply_z_rot([-extent[0], 0], z_rot_euler);
-        const nodeBAtOrigin = apply_z_rot([extent[0], 0], z_rot_euler);
+        // compensate for nodes circle radius by decreasing extent
+        const nodeAAtOrigin = apply_z_rot([-extent[0]+NODE_RADIUS_WORLD, 0], z_rot_euler);
+        const nodeBAtOrigin = apply_z_rot([extent[0]-NODE_RADIUS_WORLD, 0], z_rot_euler);
         const centre = {
             x: center[0],
             y: center[1],
