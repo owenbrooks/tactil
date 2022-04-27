@@ -12,7 +12,7 @@ from scipy import stats
 from scipy.spatial.transform import Rotation as R
 import math
 
-def process(pcd_path: typing.Union[str, bytes, os.PathLike], z_index=1, visualise=False):
+def process(pcd_path: typing.Union[str, bytes, os.PathLike], z_index=2, visualise=False):
     # o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Error)
     # Load pcd
     load_tic = time.perf_counter()
@@ -32,14 +32,6 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], z_index=1, visualis
         pcd_normals[:, [2, z_index]] = pcd_normals[:, [z_index, 2]] 
         pcd.points = o3d.cpu.pybind.utility.Vector3dVector(pcd_points)
         pcd.normals = o3d.cpu.pybind.utility.Vector3dVector(pcd_normals)
-
-    # Switch x and y axis
-    pcd_points = np.asarray(pcd.points)
-    pcd_normals = np.asarray(pcd.normals)
-    pcd_points[:, [0, 1]] = pcd_points[:, [1, 0]] 
-    pcd_normals[:, [1, 0]] = pcd_normals[:, [0, 1]] 
-    pcd.points = o3d.cpu.pybind.utility.Vector3dVector(pcd_points)
-    pcd.normals = o3d.cpu.pybind.utility.Vector3dVector(pcd_normals)
 
     # Remove roof
     max_height = 2.2
@@ -117,7 +109,7 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], z_index=1, visualis
     most_common_label = stats.mode(labels).mode 
     biggest_normal_cluster = unit_normals[labels == most_common_label]
     primary_normal_direction = np.mean(biggest_normal_cluster, axis=0)
-    z_angle = math.atan2(primary_normal_direction[1], primary_normal_direction[0]) + np.pi/2
+    z_angle = math.atan2(primary_normal_direction[1], primary_normal_direction[0]) - np.pi/2
     rotation_matrix = np.linalg.inv(R.from_euler('xyz', [0, 0, z_angle]).as_matrix())
     pcd.rotate(rotation_matrix)
     print("Rotated to primary normal direction")

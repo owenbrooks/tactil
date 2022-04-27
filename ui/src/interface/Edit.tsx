@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import './Interface.css'
-import { BoxProperties, Coordinate, boxParamsToGraph, PIXEL_TO_WORLD_FACTOR, NODE_RADIUS_PX } from '../api';
+import { BoxProperties, Coordinate, boxParamsToGraph, PIXEL_TO_WORLD_FACTOR } from '../api';
 import './Edit.css'
 
 type EditProps = {

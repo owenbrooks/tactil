@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { ProcessReponse, postData, BoxProperties } from '../api';
 const upload_url = "http://localhost:5000/upload"
 const process_url = "http://localhost:5000/process"
+// const upload_url = "http://118.138.108.62:5000/upload"
+// const process_url = "http://118.138.108.62:5000/process"
 
 type UploadProps = {
     setBoxProperties: React.Dispatch<React.SetStateAction<BoxProperties | undefined>>
