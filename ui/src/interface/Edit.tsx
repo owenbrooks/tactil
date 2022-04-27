@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import './Interface.css'
 import { BoxProperties, Coordinate, boxParamsToGraph, PIXEL_TO_WORLD_FACTOR } from '../api';
 import './Edit.css'
+import ScaleMarker from './ScaleMarker';
 
 type EditProps = {
   boxProperties: BoxProperties | undefined,
@@ -102,8 +103,8 @@ function Edit(props: EditProps) {
     // since this avoids the issue of the state becoming stale. 
     // See https://stackoverflow.com/questions/55265255/react-usestate-hook-event-handler-using-initial-state 
     setZoomLevel(oldZoom => {
-      const delta = e.deltaY * -0.0008;
-      const proposedZoom = oldZoom + delta;
+      const delta = e.deltaY * -0.0002;
+      const proposedZoom = oldZoom + delta*oldZoom;
       let newZoom;
       if (proposedZoom < minZoom) {
         newZoom = minZoom;
@@ -122,8 +123,8 @@ function Edit(props: EditProps) {
         <p>Edit</p>
         <button onClick={() => { setZoomLevel(defaultZoom); }}>Reset zoom</button>
         <button onClick={() => { setSavedPanOffset({ x: 0, y: 0 }); }}>Reset pan</button>
-        <pre>{JSON.stringify(livePanOffset, null, 2)}</pre>
-        <pre>{JSON.stringify(savedPanOffset, null, 2)}</pre>
+        {/* <pre>{JSON.stringify(livePanOffset, null, 2)}</pre>
+        <pre>{JSON.stringify(savedPanOffset, null, 2)}</pre> */}
         {/* <pre>{JSON.stringify(props.boxProperties, null, 2)}</pre> */}
 
       </div>
@@ -180,6 +181,7 @@ function Edit(props: EditProps) {
               transform: "translate(-50%, -50%) rotate(" + angle + "deg) ",
             }}> </div>
           })}
+          <ScaleMarker zoomLevel={zoomLevel}/>
         </>
       </div>
     </div>
