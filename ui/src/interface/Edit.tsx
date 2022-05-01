@@ -23,8 +23,8 @@ function pixelToWorld(pixelCoord: Coordinate, pixelOffset: Coordinate, zoomLevel
 }
 
 function worldToPixel(worldCoord: Coordinate, pixelOffset: Coordinate, zoomLevel: number) {
-  const x = worldCoord.x * zoomLevel / PIXEL_TO_WORLD_FACTOR + pixelOffset.x;
-  const y = worldCoord.y * zoomLevel / PIXEL_TO_WORLD_FACTOR + pixelOffset.y;
+  const x = worldCoord.x * zoomLevel / PIXEL_TO_WORLD_FACTOR + pixelOffset.x * zoomLevel;
+  const y = worldCoord.y * zoomLevel / PIXEL_TO_WORLD_FACTOR + pixelOffset.y * zoomLevel;
   return {
     x: x,
     y: -y, // negative y since pixel coordinate system is reversed
@@ -59,7 +59,7 @@ function Edit(props: EditProps) {
       setMousePos(pixelCoord);
 
       if (isPanning) {
-        setLivePanOffset({ x: pixelCoord.x - panStartPos.x, y: pixelCoord.y - panStartPos.y });
+        setLivePanOffset({ x: (pixelCoord.x - panStartPos.x)/zoomLevel, y: (pixelCoord.y - panStartPos.y)/zoomLevel });
       }
     }
     // console.log("mouse pos", mousePos);
