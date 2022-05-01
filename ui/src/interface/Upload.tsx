@@ -41,7 +41,20 @@ function Upload(props: UploadProps) {
                 console.log(value)
                 setIsUploading(false);
                 setUploadFinished(value.ok);
+            }).then(() => {
+                if (selectedFile != null) {
+                    const data = { "filename": selectedFile.name };
+                    setIsProcessing(true);
+                    postData(process_url, data).then((response: ProcessReponse) => {
+                        console.log(response)
+                        setIsProcessing(false);
+                        props.setBoxProperties(response.box_outputs);
+                        navigate("/edit")
+                    });
+                }
             });
+
+
         } else {
             console.error("No file selected.");
         }
@@ -55,7 +68,7 @@ function Upload(props: UploadProps) {
                 console.log(response)
                 setIsProcessing(false);
                 props.setBoxProperties(response.box_outputs);
-                navigate("/generate")
+                navigate("/edit")
             });
         }
     }
