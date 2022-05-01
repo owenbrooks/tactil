@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, SyntheticEvent } from 'react';
 import './Interface.css'
 import { BoxProperties, Coordinate, boxParamsToGraph, PIXEL_TO_WORLD_FACTOR } from '../api';
 import './Edit.css'
 import ScaleMarker from './ScaleMarker';
+import { distance } from '../geometry';
 
 type EditProps = {
   boxProperties: BoxProperties | undefined,
@@ -11,6 +12,7 @@ type EditProps = {
 
 const minZoom = 0.1;
 const maxZoom = 50;
+const NODE_RADIUS_PX = 13 / 2;
 
 function pixelToWorld(pixelCoord: Coordinate, pixelOffset: Coordinate, zoomLevel: number) {
   const x = PIXEL_TO_WORLD_FACTOR * (pixelCoord.x - pixelOffset.x) / zoomLevel;
@@ -36,6 +38,7 @@ function Edit(props: EditProps) {
   const graph = boxParamsToGraph(props.boxProperties);
   const [nodes, setNodes] = useState<Record<number, Coordinate>>(graph.nodes);
   const [edges, setEdges] = useState<Record<number, [number, number]>>(graph.edges);
+  const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
 
   // Zooming, panning and mouse variables
   const defaultZoom = 1.0;
@@ -46,6 +49,11 @@ function Edit(props: EditProps) {
   const [isPanning, setIsPanning] = useState(false);
   const [panStartPos, setPanStartPos] = useState({ x: 0, y: 0 });
   const editDivRef = useRef<HTMLDivElement>(null);
+
+  const combinedPanOffset = {
+    x: livePanOffset.x + savedPanOffset.x,
+    y: -livePanOffset.y - savedPanOffset.y, // negative because of reversed y coordinate frame
+  };
 
   // Zooming, panning and mouse controls
   function handleMouseMove(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
@@ -59,15 +67,29 @@ function Edit(props: EditProps) {
       setMousePos(pixelCoord);
 
       if (isPanning) {
-        setLivePanOffset({ x: (pixelCoord.x - panStartPos.x)/zoomLevel, y: (pixelCoord.y - panStartPos.y)/zoomLevel });
+        setLivePanOffset({ x: (pixelCoord.x - panStartPos.x) / zoomLevel, y: (pixelCoord.y - panStartPos.y) / zoomLevel });
       }
     }
     // console.log("mouse pos", mousePos);
   }
-  function handleMouseDown() {
-    // start panning
-    setPanStartPos(mousePos)
-    setIsPanning(true);
+  function handleMouseDown(e: React.MouseEvent) {
+    // Only do this for primary click
+    if (e.button == 0) {
+
+      const hoveredNodes = Object.keys(nodes).filter((nodeId) => {
+        const pixelCoord = worldToPixel(nodes[parseInt(nodeId)], combinedPanOffset, zoomLevel);
+        return distance(mousePos, pixelCoord) < NODE_RADIUS_PX;;
+      });
+
+      if (hoveredNodes.length === 0) {
+        // start panning
+        setPanStartPos(mousePos);
+        setIsPanning(true);
+
+        // reset selected nodes
+        setSelectedNodes([]);
+      }
+    }
   }
   function finishPanning() {
     setIsPanning(false);
@@ -79,8 +101,34 @@ function Edit(props: EditProps) {
       x: 0, y: 0,
     });
   }
-  function handleMouseUp() {
-    finishPanning();
+  function handleMouseUp(e: React.MouseEvent) {
+    // Only work for primary button
+    if (e.button === 0) {
+
+      const hoveredNodes = Object.keys(nodes).filter((nodeId) => {
+        const pixelCoord = worldToPixel(nodes[parseInt(nodeId)], combinedPanOffset, zoomLevel);
+        return distance(mousePos, pixelCoord) < NODE_RADIUS_PX;;
+      });
+      console.log(hoveredNodes);
+      console.log(selectedNodes)
+      setSelectedNodes(prevSelected => {
+        const isAlreadySelected = hoveredNodes.some(nodeId => {
+          return prevSelected.indexOf(nodeId) >= 0;
+        });
+        // Deselect hovered nodes if any were previously selected
+        if (isAlreadySelected) {
+          const newSelected = prevSelected.filter(nodeId => {
+            return hoveredNodes.indexOf(nodeId) < 0;
+          });
+          return newSelected;
+        } else { // Otherwise select them
+          const newSelected = prevSelected.concat(hoveredNodes);
+          return newSelected;
+        }
+      });
+
+      finishPanning();
+    }
   }
   function handleMouseLeave() {
     finishPanning();
@@ -104,7 +152,7 @@ function Edit(props: EditProps) {
     // See https://stackoverflow.com/questions/55265255/react-usestate-hook-event-handler-using-initial-state 
     setZoomLevel(oldZoom => {
       const delta = e.deltaY * -0.0002;
-      const proposedZoom = oldZoom + delta*oldZoom;
+      const proposedZoom = oldZoom + delta * oldZoom;
       let newZoom;
       if (proposedZoom < minZoom) {
         newZoom = minZoom;
@@ -138,14 +186,13 @@ function Edit(props: EditProps) {
         <>
           {/* Nodes (circles)*/}
           {Object.keys(nodes).map((nodeId) => {
-            const combinedPanOffset = {
-              x: livePanOffset.x + savedPanOffset.x,
-              y: -livePanOffset.y - savedPanOffset.y, // negative because of reversed y coordinate frame
-            };
-            const { x, y } = worldToPixel(nodes[parseInt(nodeId)], combinedPanOffset, zoomLevel);
-            const left = 'calc(' + x + 'px + 50%)';
-            const top = 'calc(' + y + 'px + 50%';
-            return <div className='node' style={{ left: left, top: top, position: 'absolute' }} key={nodeId} ></div>
+            const pixelCoord = worldToPixel(nodes[parseInt(nodeId)], combinedPanOffset, zoomLevel);
+            const left = 'calc(' + pixelCoord.x + 'px + 50%)';
+            const top = 'calc(' + pixelCoord.y + 'px + 50%';
+            const isHovered = distance(mousePos, pixelCoord) < NODE_RADIUS_PX;
+            const isSelected = selectedNodes.indexOf(nodeId) >= 0;
+            const className = 'node' + (isHovered ? ' hovered' : '') + (isSelected ? ' selected' : '');
+            return <div className={className} style={{ left: left, top: top, position: 'absolute', height: NODE_RADIUS_PX * 2, width: NODE_RADIUS_PX * 2 }} key={nodeId} ></div>
           })}
           {/* Edges (lines)*/}
           {Object.keys(edges).map((edgeId) => {
@@ -156,10 +203,6 @@ function Edit(props: EditProps) {
             const averagePos = {
               x: (nodeA.x + nodeB.x) / 2,
               y: (nodeA.y + nodeB.y) / 2
-            };
-            const combinedPanOffset = {
-              x: livePanOffset.x + savedPanOffset.x,
-              y: -livePanOffset.y - savedPanOffset.y, // negative because of reversed y coordinate frame
             };
             const averagePosPixel = worldToPixel(averagePos, combinedPanOffset, zoomLevel);
             const length = Math.sqrt((nodeA.x - nodeB.x) ** 2 + (nodeA.y - nodeB.y) ** 2) * zoomLevel / PIXEL_TO_WORLD_FACTOR;
@@ -181,7 +224,7 @@ function Edit(props: EditProps) {
               transform: "translate(-50%, -50%) rotate(" + angle + "deg) ",
             }}> </div>
           })}
-          <ScaleMarker zoomLevel={zoomLevel}/>
+          <ScaleMarker zoomLevel={zoomLevel} />
         </>
       </div>
     </div>

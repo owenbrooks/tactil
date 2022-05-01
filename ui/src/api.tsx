@@ -42,7 +42,6 @@ type Graph = {
 };
 
 export const PIXEL_TO_WORLD_FACTOR = 0.1;
-// const NODE_RADIUS_PX = 13/2; // TODO: set this radius in js instead of css
 
 export function boxParamsToGraph(boxProperties: BoxProperties | undefined): Graph {
     if (boxProperties === undefined) {

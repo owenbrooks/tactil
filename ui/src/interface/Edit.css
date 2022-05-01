@@ -28,8 +28,6 @@
 }
 
 .node {
-  height: 13px;
-  width: 13px;
   background-color: black;
   border-radius: 50%;
   display: inline-block;
@@ -47,4 +45,14 @@
 }
 .edge:hover {
   background-color: #019592;
+}
+
+.hovered {
+  background-color: #019592;
+  z-index: 10;
+}
+
+.selected {
+  background-color: #019592;
+  z-index: 10;
 }
