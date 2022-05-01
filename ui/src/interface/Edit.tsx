@@ -1,4 +1,4 @@
-import React, { useState, useRef, SyntheticEvent } from 'react';
+import React, { useState, useRef } from 'react';
 import './Interface.css'
 import { BoxProperties, Coordinate, boxParamsToGraph, PIXEL_TO_WORLD_FACTOR } from '../api';
 import './Edit.css'
@@ -49,11 +49,44 @@ function Edit(props: EditProps) {
   const [isPanning, setIsPanning] = useState(false);
   const [panStartPos, setPanStartPos] = useState({ x: 0, y: 0 });
   const editDivRef = useRef<HTMLDivElement>(null);
+  const [dragStartPosWorld, setDragStartPosWorld] = useState<Coordinate | null>(null)
 
+  // Do calculations for panning
   const combinedPanOffset = {
     x: livePanOffset.x + savedPanOffset.x,
     y: -livePanOffset.y - savedPanOffset.y, // negative because of reversed y coordinate frame
   };
+
+  // Do calculations for dragging
+  const mousePosWorld = pixelToWorld(mousePos, combinedPanOffset, zoomLevel);
+  const liveDragOffsetWorld = (() => {
+    if (dragStartPosWorld !== null) {
+      return {
+        x: mousePosWorld.x - dragStartPosWorld.x,
+        y: mousePosWorld.y - dragStartPosWorld.y
+      };
+    } else {
+      return null;
+    }
+  })();
+  const nodesWithDragOffset = Object.keys(nodes).map(nodeId => {
+    const origNode = nodes[parseInt(nodeId)];
+    // Add drag offset if necessary
+    if (selectedNodes.indexOf(nodeId) >= 0 && liveDragOffsetWorld != null) {
+      return {
+        x: origNode.x + liveDragOffsetWorld.x,
+        y: origNode.y + -liveDragOffsetWorld.y,
+      };
+    } else {
+      return origNode;
+    }
+  });
+
+  // Find nodes under the mouse cursor
+  const hoveredNodes = Object.keys(nodesWithDragOffset).filter((nodeId) => {
+    const pixelCoord = worldToPixel(nodesWithDragOffset[parseInt(nodeId)], combinedPanOffset, zoomLevel);
+    return distance(mousePos, pixelCoord) < NODE_RADIUS_PX;;
+  });
 
   // Zooming, panning and mouse controls
   function handleMouseMove(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
@@ -74,13 +107,8 @@ function Edit(props: EditProps) {
   }
   function handleMouseDown(e: React.MouseEvent) {
     // Only do this for primary click
-    if (e.button == 0) {
-
-      const hoveredNodes = Object.keys(nodes).filter((nodeId) => {
-        const pixelCoord = worldToPixel(nodes[parseInt(nodeId)], combinedPanOffset, zoomLevel);
-        return distance(mousePos, pixelCoord) < NODE_RADIUS_PX;;
-      });
-
+    if (e.button === 0) {
+      // Start panning if no nodes are hovered   
       if (hoveredNodes.length === 0) {
         // start panning
         setPanStartPos(mousePos);
@@ -88,6 +116,11 @@ function Edit(props: EditProps) {
 
         // reset selected nodes
         setSelectedNodes([]);
+      }
+      // If nodes are hovered, and they have been selected, start dragging
+      const hoveredNodeAlreadySelected = hoveredNodes.some((nodeId) => selectedNodes.indexOf(nodeId) >= 0);
+      if (hoveredNodeAlreadySelected) {
+        setDragStartPosWorld(mousePosWorld); // start dragging
       }
     }
   }
@@ -104,34 +137,38 @@ function Edit(props: EditProps) {
   function handleMouseUp(e: React.MouseEvent) {
     // Only work for primary button
     if (e.button === 0) {
-
-      const hoveredNodes = Object.keys(nodes).filter((nodeId) => {
-        const pixelCoord = worldToPixel(nodes[parseInt(nodeId)], combinedPanOffset, zoomLevel);
-        return distance(mousePos, pixelCoord) < NODE_RADIUS_PX;;
-      });
-      console.log(hoveredNodes);
-      console.log(selectedNodes)
-      setSelectedNodes(prevSelected => {
-        const isAlreadySelected = hoveredNodes.some(nodeId => {
-          return prevSelected.indexOf(nodeId) >= 0;
-        });
-        // Deselect hovered nodes if any were previously selected
-        if (isAlreadySelected) {
-          const newSelected = prevSelected.filter(nodeId => {
-            return hoveredNodes.indexOf(nodeId) < 0;
+      if (liveDragOffsetWorld === null || (liveDragOffsetWorld.x === 0 && liveDragOffsetWorld.y === 0)) { // only if weren't previously dragging
+        setSelectedNodes(prevSelected => {
+          const isAlreadySelected = hoveredNodes.some(nodeId => {
+            return prevSelected.indexOf(nodeId) >= 0;
           });
-          return newSelected;
-        } else { // Otherwise select them
-          const newSelected = prevSelected.concat(hoveredNodes);
-          return newSelected;
-        }
-      });
+          // Deselect hovered nodes if any were previously selected
+          if (isAlreadySelected) {
+            const newSelected = prevSelected.filter(nodeId => {
+              return hoveredNodes.indexOf(nodeId) < 0;
+            });
+            return newSelected;
+          } else { // Otherwise add them to selection
+            const newSelected = prevSelected.concat(hoveredNodes);
+            return newSelected;
+          }
+        });
+      }
 
       finishPanning();
+
+      // Finish and apply drag action
+      finishDragging();
     }
   }
+  function finishDragging() {
+    setNodes(nodesWithDragOffset);
+    setDragStartPosWorld(null);
+  }
+
   function handleMouseLeave() {
     finishPanning();
+    finishDragging();
     if (editDivRef && editDivRef.current) {
       // Register our custom handleWheel function to prevent scrolling when mouse is over the edit div
       editDivRef.current.removeEventListener('wheel', handleWheel, false)
@@ -171,9 +208,8 @@ function Edit(props: EditProps) {
         <p>Edit</p>
         <button onClick={() => { setZoomLevel(defaultZoom); }}>Reset zoom</button>
         <button onClick={() => { setSavedPanOffset({ x: 0, y: 0 }); }}>Reset pan</button>
-        {/* <pre>{JSON.stringify(livePanOffset, null, 2)}</pre>
-        <pre>{JSON.stringify(savedPanOffset, null, 2)}</pre> */}
-        {/* <pre>{JSON.stringify(props.boxProperties, null, 2)}</pre> */}
+        {/* <pre>{JSON.stringify(dragStartPosWorld, null, 2)}</pre>
+        <pre>{JSON.stringify(liveDragOffsetWorld, null, 2)}</pre> */}
 
       </div>
       <div className='edit-frame' id="edit-frame" ref={editDivRef}
@@ -185,8 +221,8 @@ function Edit(props: EditProps) {
       >
         <>
           {/* Nodes (circles)*/}
-          {Object.keys(nodes).map((nodeId) => {
-            const pixelCoord = worldToPixel(nodes[parseInt(nodeId)], combinedPanOffset, zoomLevel);
+          {Object.keys(nodesWithDragOffset).map((nodeId) => {
+            const pixelCoord = worldToPixel(nodesWithDragOffset[parseInt(nodeId)], combinedPanOffset, zoomLevel);
             const left = 'calc(' + pixelCoord.x + 'px + 50%)';
             const top = 'calc(' + pixelCoord.y + 'px + 50%';
             const isHovered = distance(mousePos, pixelCoord) < NODE_RADIUS_PX;
@@ -197,8 +233,8 @@ function Edit(props: EditProps) {
           {/* Edges (lines)*/}
           {Object.keys(edges).map((edgeId) => {
             const edge = edges[parseInt(edgeId)];
-            const nodeA = nodes[edge[0]];
-            const nodeB = nodes[edge[1]];
+            const nodeA = nodesWithDragOffset[edge[0]];
+            const nodeB = nodesWithDragOffset[edge[1]];
 
             const averagePos = {
               x: (nodeA.x + nodeB.x) / 2,
