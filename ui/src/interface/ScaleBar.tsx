@@ -7,7 +7,7 @@ type ScaleMarkerProps = {
 // Scale bar transitions between 2m, 5m, and 10m and other powers of 10.
 // 0.01m, 0.02m, 0.05m, 0.1m, 0.2m, 0.5, 1m, 2m, 5m, 10m, 20m, 50m, 100m
 
-function ScaleMarker(props: ScaleMarkerProps) {
+function ScaleBar(props: ScaleMarkerProps) {
     const log = Math.log10(props.zoomLevel)-1; // subtract one to make reasonable default size
     const exactFraction = (10**(-log))/(10**(Math.floor(-log)))
     let roundedFraction = 1
@@ -42,4 +42,4 @@ function ScaleMarker(props: ScaleMarkerProps) {
     );
 }
 
-export default ScaleMarker;
+export default ScaleBar;

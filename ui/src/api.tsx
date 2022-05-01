@@ -1,3 +1,4 @@
+import { distance } from "./geometry";
 
 export type ProcessReponse = {
     box_outputs: BoxProperties
@@ -101,5 +102,53 @@ export function boxParamsToGraph(boxProperties: BoxProperties | undefined): Grap
     return {
         nodes: nodes,
         edges: edges,
+    }
+}
+
+export function graphToBoxParams(graph: Graph | undefined): BoxProperties {
+    if (graph === undefined) {
+        return {
+            box_centers: [],
+            box_extents: [],
+            box_rotations: [],
+        };
+    }
+
+    let box_centers = [];
+    let box_extents = [];
+    let box_rotations = [];
+    for (let edge of Object.values(graph.edges)) {
+        let nodeA = graph.nodes[edge[0]];
+        let nodeB = graph.nodes[edge[1]];
+
+        const average = [
+            (nodeA.x+nodeB.x)/2,
+            (nodeA.y+nodeB.y)/2,
+            0,
+        ];
+        box_centers.push(average);
+        // console.log(average)
+
+        const length = distance(nodeA, nodeB);
+        const height = 1; // m
+        const thickness = 0.1 // m
+        box_extents.push([length, thickness, height]);
+
+        const zAngleRad = Math.atan2((nodeB.y - nodeA.y), (nodeB.x - nodeA.x));
+        const cosTheta = Math.cos(zAngleRad);
+        const sinTheta = Math.sin(zAngleRad);
+        const rotMatrix = [
+            [cosTheta, -sinTheta, 0],
+            [sinTheta, cosTheta, 0],
+            [0, 0, 1]
+        ];
+        box_rotations.push(rotMatrix);
+    }
+    // console.log(box_centers)
+
+    return {
+        box_centers: box_centers as [number, number, number][],
+        box_extents: box_extents as [number, number, number][],
+        box_rotations: box_rotations as [[number, number, number],[number, number, number],[number, number, number]][],
     }
 }

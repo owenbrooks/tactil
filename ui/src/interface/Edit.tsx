@@ -1,9 +1,8 @@
-import React, { useState, useRef } from 'react';
-import './Interface.css'
-import { BoxProperties, Coordinate, boxParamsToGraph, PIXEL_TO_WORLD_FACTOR } from '../api';
-import './Edit.css'
-import ScaleMarker from './ScaleMarker';
+import React, { useState, useRef, useEffect } from 'react';
+import { BoxProperties, Coordinate, boxParamsToGraph, PIXEL_TO_WORLD_FACTOR, graphToBoxParams } from '../api';
+import ScaleBar from './ScaleBar';
 import { distance } from '../geometry';
+import './Edit.css'
 
 type EditProps = {
   boxProperties: BoxProperties | undefined,
@@ -35,9 +34,9 @@ function worldToPixel(worldCoord: Coordinate, pixelOffset: Coordinate, zoomLevel
 
 function Edit(props: EditProps) {
 
-  const graph = boxParamsToGraph(props.boxProperties);
-  const [nodes, setNodes] = useState<Record<number, Coordinate>>(graph.nodes);
-  const [edges, setEdges] = useState<Record<number, [number, number]>>(graph.edges);
+  const initialGraph = boxParamsToGraph(props.boxProperties);
+  const [nodes, setNodes] = useState<Record<number, Coordinate>>(initialGraph.nodes);
+  const [edges, setEdges] = useState<Record<number, [number, number]>>(initialGraph.edges);
   const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
 
   // Zooming, panning and mouse variables
@@ -57,6 +56,18 @@ function Edit(props: EditProps) {
     y: -livePanOffset.y - savedPanOffset.y, // negative because of reversed y coordinate frame
   };
 
+  // Update graph when nodes or edges are changed
+  const { setBoxProperties } = props;
+  useEffect(() => {
+    const newGraph = {
+      nodes: nodes,
+      edges: edges
+    };
+    const newBoxProperties = graphToBoxParams(newGraph);
+    console.log("new graph", newGraph)
+    setBoxProperties(newBoxProperties);
+  }, [nodes, edges, setBoxProperties])
+
   // Do calculations for dragging
   const mousePosWorld = pixelToWorld(mousePos, combinedPanOffset, zoomLevel);
   const liveDragOffsetWorld = (() => {
@@ -69,18 +80,19 @@ function Edit(props: EditProps) {
       return null;
     }
   })();
-  const nodesWithDragOffset = Object.keys(nodes).map(nodeId => {
+  let nodesWithDragOffset: Record<number, Coordinate> = {}
+  for (let nodeId in Object.keys(nodes)) {
     const origNode = nodes[parseInt(nodeId)];
     // Add drag offset if necessary
     if (selectedNodes.indexOf(nodeId) >= 0 && liveDragOffsetWorld != null) {
-      return {
+      nodesWithDragOffset[nodeId] = {
         x: origNode.x + liveDragOffsetWorld.x,
         y: origNode.y + -liveDragOffsetWorld.y,
       };
     } else {
-      return origNode;
+      nodesWithDragOffset[nodeId] = origNode;
     }
-  });
+  }
 
   // Find nodes under the mouse cursor
   const hoveredNodes = Object.keys(nodesWithDragOffset).filter((nodeId) => {
@@ -166,6 +178,7 @@ function Edit(props: EditProps) {
     setDragStartPosWorld(null);
   }
 
+  // When the mouse exits the editing box, stop panning/dragging and allow scrolling again
   function handleMouseLeave() {
     finishPanning();
     finishDragging();
@@ -260,7 +273,7 @@ function Edit(props: EditProps) {
               transform: "translate(-50%, -50%) rotate(" + angle + "deg) ",
             }}> </div>
           })}
-          <ScaleMarker zoomLevel={zoomLevel} />
+          <ScaleBar zoomLevel={zoomLevel} />
         </>
       </div>
     </div>
