@@ -1,5 +1,5 @@
 import { SyntheticEvent, useState } from 'react';
-import { BoxProperties, postData } from '../api';
+import { BoxProperties, postData } from '../api/api';
 const generate_url = "http://localhost:5000/generate"
 
 type GenerateProps = {

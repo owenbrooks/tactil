@@ -4,7 +4,7 @@ import Upload from './Upload';
 import Generate from './Generate';
 import Edit from './Edit';
 import { useState } from 'react';
-import { BoxProperties } from '../api';
+import { BoxProperties } from '../api/api';
 
 function Interface() {
 

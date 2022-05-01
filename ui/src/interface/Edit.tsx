@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { BoxProperties, Coordinate, boxParamsToGraph, PIXEL_TO_WORLD_FACTOR, graphToBoxParams } from '../api';
+import { BoxProperties, Coordinate, boxParamsToGraph, PIXEL_TO_WORLD_FACTOR, graphToBoxParams } from '../api/api';
 import ScaleBar from './ScaleBar';
 import { distance } from '../geometry';
 import './Edit.css'
@@ -64,7 +64,6 @@ function Edit(props: EditProps) {
       edges: edges
     };
     const newBoxProperties = graphToBoxParams(newGraph);
-    console.log("new graph", newGraph)
     setBoxProperties(newBoxProperties);
   }, [nodes, edges, setBoxProperties])
 

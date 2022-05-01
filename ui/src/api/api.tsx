@@ -1,4 +1,4 @@
-import { distance } from "./geometry";
+import { distance } from "../geometry";
 
 export type ProcessReponse = {
     box_outputs: BoxProperties
@@ -144,7 +144,6 @@ export function graphToBoxParams(graph: Graph | undefined): BoxProperties {
         ];
         box_rotations.push(rotMatrix);
     }
-    // console.log(box_centers)
 
     return {
         box_centers: box_centers as [number, number, number][],

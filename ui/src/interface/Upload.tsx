@@ -1,11 +1,10 @@
 import React, { SyntheticEvent, useState } from 'react';
 import './Interface.css'
 import { useNavigate } from "react-router-dom";
-import { ProcessReponse, postData, BoxProperties } from '../api';
+import { ProcessReponse, postData, BoxProperties } from '../api/api';
 const upload_url = "http://localhost:5000/upload"
 const process_url = "http://localhost:5000/process"
-// const upload_url = "http://118.138.108.62:5000/upload"
-// const process_url = "http://118.138.108.62:5000/process"
+const example_api_response = require('./example_api_response.json');
 
 type UploadProps = {
     setBoxProperties: React.Dispatch<React.SetStateAction<BoxProperties | undefined>>
@@ -18,6 +17,7 @@ function Upload(props: UploadProps) {
     const [isUploading, setIsUploading] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const navigate = useNavigate();
+    const isDevEnvironment = process.env.NODE_ENV === 'development';
 
     const changeHandler = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files != null) {
@@ -49,7 +49,7 @@ function Upload(props: UploadProps) {
                         console.log(response)
                         setIsProcessing(false);
                         props.setBoxProperties(response.box_outputs);
-                        navigate("/edit")
+                        navigate("/edit");
                     });
                 }
             });
@@ -57,6 +57,11 @@ function Upload(props: UploadProps) {
 
         } else {
             console.error("No file selected.");
+            // Provide a test api response in dev mode
+            if (isDevEnvironment) {
+                props.setBoxProperties(example_api_response.box_outputs);
+                navigate("/edit");
+            } 
         }
     };
 
@@ -75,10 +80,10 @@ function Upload(props: UploadProps) {
 
     return (
         <div className="interface">
-            {(!isUploading && !isProcessing && !uploadFinished ) && 
-            <><p>Choose a .pcd file to upload</p>
-            <input type="file" name="file" onChange={changeHandler} /></>}
-            {(isFilePicked && !isUploading && !isProcessing && !uploadFinished ) && <div>
+            {(!isUploading && !isProcessing && !uploadFinished) &&
+                <><p>Choose a .pcd file to upload</p>
+                    <input type="file" name="file" onChange={changeHandler} /></>}
+            {((isFilePicked || isDevEnvironment) && !isUploading && !isProcessing && !uploadFinished) && <div>
                 <button onClick={handleSubmission}>Upload</button>
             </div>}
             {uploadFinished && !isProcessing && <div>

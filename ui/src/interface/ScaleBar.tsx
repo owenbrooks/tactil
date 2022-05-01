@@ -1,4 +1,4 @@
-import { PIXEL_TO_WORLD_FACTOR } from '../api';
+import { PIXEL_TO_WORLD_FACTOR } from '../api/api';
 
 type ScaleMarkerProps = {
     zoomLevel: number,
