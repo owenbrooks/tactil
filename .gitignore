@@ -4,3 +4,4 @@ env
 __pycache__
 api/stl_output
 api/pcd_uploads
+output

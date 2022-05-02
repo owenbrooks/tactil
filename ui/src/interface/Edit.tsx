@@ -39,6 +39,9 @@ function Edit(props: EditProps) {
   const [edges, setEdges] = useState<Record<number, [number, number]>>(initialGraph.edges);
   const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
 
+  // Keyboard state
+  const [shiftHeld, setShiftHeld] = useState(false);
+
   // Zooming, panning and mouse variables
   const defaultZoom = 1.0;
   const [zoomLevel, setZoomLevel] = useState(defaultZoom);
@@ -153,15 +156,20 @@ function Edit(props: EditProps) {
           const isAlreadySelected = hoveredNodes.some(nodeId => {
             return prevSelected.indexOf(nodeId) >= 0;
           });
-          // Deselect hovered nodes if any were previously selected
-          if (isAlreadySelected) {
-            const newSelected = prevSelected.filter(nodeId => {
-              return hoveredNodes.indexOf(nodeId) < 0;
-            });
-            return newSelected;
-          } else { // Otherwise add them to selection
-            const newSelected = prevSelected.concat(hoveredNodes);
-            return newSelected;
+          // Deselect hovered nodes if any were previously selected and shift is held down
+          if (shiftHeld) {
+            // Remove clicked nodes if they were already selected
+            if (isAlreadySelected) {
+              const newSelected = prevSelected.filter(nodeId => {
+                return hoveredNodes.indexOf(nodeId) < 0;
+              });
+              return newSelected;
+            } else { // Otherwise add them to selection
+              const newSelected = prevSelected.concat(hoveredNodes);
+              return newSelected;
+            }
+          } else { // if shift isn't held, change selection to only currently hovered nodes
+            return hoveredNodes;
           }
         });
       }
@@ -192,7 +200,7 @@ function Edit(props: EditProps) {
       editDivRef.current.addEventListener('wheel', handleWheel, { passive: false })
     }
   }
-  function handleWheel(this: HTMLDivElement, e: WheelEvent): any {
+  function handleWheel(this: HTMLDivElement, e: WheelEvent) {
     e.preventDefault() // stops from scrolling the rest of the page
 
     // Set the new zoom level based on amount scrolled
@@ -214,6 +222,12 @@ function Edit(props: EditProps) {
     });
   };
 
+  function handleKeyPress(e: React.KeyboardEvent) {
+    if (e.key === 'Shift') { // shift must be held for selection of more than one node
+      setShiftHeld(e.type === 'keydown')
+    }
+  }
+
   return (
     <div className="edit-container">
       <div className='edit-params'>
@@ -224,12 +238,15 @@ function Edit(props: EditProps) {
         <pre>{JSON.stringify(liveDragOffsetWorld, null, 2)}</pre> */}
 
       </div>
-      <div className='edit-frame' id="edit-frame" ref={editDivRef}
+      <div className='edit-frame' id="edit-frame" ref={editDivRef} 
+        tabIndex={-1}
         onMouseMove={handleMouseMove}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
         onMouseEnter={handleMouseEnter}
+        onKeyDown={handleKeyPress}
+        onKeyUp={handleKeyPress}
       >
         <>
           {/* Nodes (circles)*/}
