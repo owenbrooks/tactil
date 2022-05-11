@@ -38,8 +38,8 @@ export type Coordinate = {
 };
 
 type Graph = {
-    nodes: Record<number, Coordinate>,
-    edges: Record<number, [number, number]>,
+    nodes: Map<number, Coordinate>,
+    edges: Map<number, [number, number]>,
 };
 
 export const PIXEL_TO_WORLD_FACTOR = 0.1;
@@ -47,8 +47,8 @@ export const PIXEL_TO_WORLD_FACTOR = 0.1;
 export function boxParamsToGraph(boxProperties: BoxProperties | undefined): Graph {
     if (boxProperties === undefined) {
         return {
-            nodes: {},
-            edges: {}
+            nodes: new Map(),
+            edges: new Map()
         }
     }
 
@@ -70,8 +70,8 @@ export function boxParamsToGraph(boxProperties: BoxProperties | undefined): Grap
         }
     }
 
-    const nodes: Record<number, Coordinate> = {}
-    const edges: Record<number, [number, number]> = {};
+    const nodes: Map<number, Coordinate> = new Map();
+    const edges: Map<number, [number, number]> = new Map();
 
     for (let box in boxProperties.box_centers) {
         const center = boxProperties.box_centers[box];
@@ -92,11 +92,17 @@ export function boxParamsToGraph(boxProperties: BoxProperties | undefined): Grap
         const nodeA = apply_translation(nodeAAtOrigin, centre);
         const nodeB = apply_translation(nodeBAtOrigin, centre);
         
-        const indexA = Object.keys(nodes).length;
+        const indexA = nodes.size;
         const indexB = indexA + 1;
-        nodes[indexA] = nodeA;
-        nodes[indexB] = nodeB;
-        edges[Object.keys(edges).length] = [indexA, indexB];
+        nodes.set(indexA, nodeA);
+        nodes.set(indexB, nodeB);
+
+        // Create a new edge with id bigger than any existing edges
+        let maxEdgeId = -1;
+        if (edges.size > 0) {
+            maxEdgeId = [...edges.keys()].reduce((a, e ) => e > a ? e : a); // find maximum edgeId in the map
+        }
+        edges.set(maxEdgeId+1, [indexA, indexB]);
     }
 
     return {
@@ -114,20 +120,22 @@ export function graphToBoxParams(graph: Graph | undefined): BoxProperties {
         };
     }
 
-    let box_centers = [];
-    let box_extents = [];
-    let box_rotations = [];
-    for (let edge of Object.values(graph.edges)) {
-        let nodeA = graph.nodes[edge[0]];
-        let nodeB = graph.nodes[edge[1]];
+    let box_centers: Array<[number, number, number]> = [];
+    let box_extents: Array<[number, number, number]> = [];
+    let box_rotations: Array<[[number, number, number], [number, number, number], [number, number, number]]> = [];
 
-        const average = [
+    graph.edges.forEach((edge) => {
+        let nodeA = graph.nodes.get(edge[0]);
+        let nodeB = graph.nodes.get(edge[1]);
+        if (nodeA === undefined || nodeB === undefined) {
+            return; // exits loop early
+        }
+        const average: [number, number, number] = [
             (nodeA.x+nodeB.x)/2,
             (nodeA.y+nodeB.y)/2,
             0,
         ];
         box_centers.push(average);
-        // console.log(average)
 
         const length = distance(nodeA, nodeB);
         const height = 1; // m
@@ -137,13 +145,13 @@ export function graphToBoxParams(graph: Graph | undefined): BoxProperties {
         const zAngleRad = Math.atan2((nodeB.y - nodeA.y), (nodeB.x - nodeA.x));
         const cosTheta = Math.cos(zAngleRad);
         const sinTheta = Math.sin(zAngleRad);
-        const rotMatrix = [
+        const rotMatrix: [[number, number, number],[number, number, number],[number, number, number]] = [
             [cosTheta, -sinTheta, 0],
             [sinTheta, cosTheta, 0],
             [0, 0, 1]
         ];
         box_rotations.push(rotMatrix);
-    }
+    });
 
     return {
         box_centers: box_centers as [number, number, number][],

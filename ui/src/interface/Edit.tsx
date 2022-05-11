@@ -35,9 +35,9 @@ function worldToPixel(worldCoord: Coordinate, pixelOffset: Coordinate, zoomLevel
 function Edit(props: EditProps) {
 
   const initialGraph = boxParamsToGraph(props.boxProperties);
-  const [nodes, setNodes] = useState<Record<number, Coordinate>>(initialGraph.nodes);
-  const [edges, setEdges] = useState<Record<number, [number, number]>>(initialGraph.edges);
-  const [selectedNodes, setSelectedNodes] = useState<string[]>([]);
+  const [nodes, setNodes] = useState<Map<number, Coordinate>>(initialGraph.nodes);
+  const [edges, setEdges] = useState<Map<number, [number, number]>>(initialGraph.edges);
+  const [selectedNodes, setSelectedNodes] = useState<number[]>([]); // these numbers are keys to the nodes map
 
   // Keyboard state
   const [shiftHeld, setShiftHeld] = useState(false);
@@ -82,23 +82,26 @@ function Edit(props: EditProps) {
       return null;
     }
   })();
-  let nodesWithDragOffset: Record<number, Coordinate> = {}
-  for (let nodeId in Object.keys(nodes)) {
-    const origNode = nodes[parseInt(nodeId)];
-    // Add drag offset if necessary
+  let nodesWithDragOffset: Map<number, Coordinate> = new Map();
+  nodes.forEach((node, nodeId) => {
     if (selectedNodes.indexOf(nodeId) >= 0 && liveDragOffsetWorld != null) {
-      nodesWithDragOffset[nodeId] = {
-        x: origNode.x + liveDragOffsetWorld.x,
-        y: origNode.y + -liveDragOffsetWorld.y,
-      };
+      // Add drag offset if necessary
+      nodesWithDragOffset.set(nodeId, {
+        x: node.x + liveDragOffsetWorld.x,
+        y: node.y + -liveDragOffsetWorld.y,
+      });
     } else {
-      nodesWithDragOffset[nodeId] = origNode;
+      nodesWithDragOffset.set(nodeId, node);
     }
-  }
+  });
 
   // Find nodes under the mouse cursor
-  const hoveredNodes = Object.keys(nodesWithDragOffset).filter((nodeId) => {
-    const pixelCoord = worldToPixel(nodesWithDragOffset[parseInt(nodeId)], combinedPanOffset, zoomLevel);
+  const hoveredNodes = [...nodesWithDragOffset.keys()].filter((nodeId) => {
+    const node = nodesWithDragOffset.get(nodeId);
+    if (node == undefined) {
+      return false; // early return if value somehow not present
+    }
+    const pixelCoord = worldToPixel(node, combinedPanOffset, zoomLevel);
     return distance(mousePos, pixelCoord) < NODE_RADIUS_PX;;
   });
 
@@ -225,6 +228,22 @@ function Edit(props: EditProps) {
   function handleKeyPress(e: React.KeyboardEvent) {
     if (e.key === 'Shift') { // shift must be held for selection of more than one node
       setShiftHeld(e.type === 'keydown')
+    } else if (e.key === 'Delete') {
+      // Remove selected nodes
+      setNodes(prevNodes => {
+        // Deselect hovered nodes if any were previously selected and shift is held down
+        const newNodes = new Map(prevNodes);
+        selectedNodes.forEach(nodeId => {
+          newNodes.delete(nodeId) // delete node itself
+          // Delete associated edges
+          for (let [edgeId, edge] of edges) {
+            if (nodeId === edge[0] || nodeId === edge[1]) {
+              edges.delete(edgeId);
+            }
+          }
+        });
+        return newNodes;
+      });
     }
   }
 
@@ -238,7 +257,7 @@ function Edit(props: EditProps) {
         <pre>{JSON.stringify(liveDragOffsetWorld, null, 2)}</pre> */}
 
       </div>
-      <div className='edit-frame' id="edit-frame" ref={editDivRef} 
+      <div className='edit-frame' id="edit-frame" ref={editDivRef}
         tabIndex={-1}
         onMouseMove={handleMouseMove}
         onMouseDown={handleMouseDown}
@@ -250,8 +269,8 @@ function Edit(props: EditProps) {
       >
         <>
           {/* Nodes (circles)*/}
-          {Object.keys(nodesWithDragOffset).map((nodeId) => {
-            const pixelCoord = worldToPixel(nodesWithDragOffset[parseInt(nodeId)], combinedPanOffset, zoomLevel);
+          {[...nodesWithDragOffset.entries()].map(([nodeId, node]) => {
+            const pixelCoord = worldToPixel(node, combinedPanOffset, zoomLevel);
             const left = 'calc(' + pixelCoord.x + 'px + 50%)';
             const top = 'calc(' + pixelCoord.y + 'px + 50%';
             const isHovered = distance(mousePos, pixelCoord) < NODE_RADIUS_PX;
@@ -260,10 +279,14 @@ function Edit(props: EditProps) {
             return <div className={className} style={{ left: left, top: top, position: 'absolute', height: NODE_RADIUS_PX * 2, width: NODE_RADIUS_PX * 2 }} key={nodeId} ></div>
           })}
           {/* Edges (lines)*/}
-          {Object.keys(edges).map((edgeId) => {
-            const edge = edges[parseInt(edgeId)];
-            const nodeA = nodesWithDragOffset[edge[0]];
-            const nodeB = nodesWithDragOffset[edge[1]];
+          {[...edges.entries()].map(([edgeId, edge]) => {
+            const nodeA = nodesWithDragOffset.get(edge[0]);
+            const nodeB = nodesWithDragOffset.get(edge[1]);
+
+            if (nodeA === undefined || nodeB === undefined) {
+              console.error("Mismatch between nodes and edges");
+              return null; // early exit
+            }
 
             const averagePos = {
               x: (nodeA.x + nodeB.x) / 2,
