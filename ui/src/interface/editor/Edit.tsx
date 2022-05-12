@@ -4,6 +4,7 @@ import ScaleBar from '../ScaleBar';
 import { distance } from '../../geometry';
 import './Edit.css'
 import useZoom from './useZoom';
+import usePan from './usePan';
 
 type EditProps = {
   boxProperties: BoxProperties | undefined,
@@ -48,17 +49,8 @@ function Edit(props: EditProps) {
   const maxZoom = 50;
   const [zoomLevel, startZoomListen, stopZoomListen, resetZoomLevel] = useZoom(defaultZoom, maxZoom, minZoom, editDivRef);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [savedPanOffset, setSavedPanOffset] = useState({ x: 0, y: 0 });
-  const [livePanOffset, setLivePanOffset] = useState({ x: 0, y: 0 });
-  const [isPanning, setIsPanning] = useState(false);
-  const [panStartPos, setPanStartPos] = useState({ x: 0, y: 0 });
   const [dragStartPosWorld, setDragStartPosWorld] = useState<Coordinate | null>(null)
-
-  // Do calculations for panning
-  const combinedPanOffset = {
-    x: livePanOffset.x + savedPanOffset.x,
-    y: -livePanOffset.y - savedPanOffset.y, // negative because of reversed y coordinate frame
-  };
+  const [combinedPanOffset, startPanning, stopPanning, panHandleMouseMove, resetPanOffset] = usePan(zoomLevel, mousePos);
 
   // Update graph when nodes or edges are changed
   const { setBoxProperties } = props;
@@ -116,12 +108,8 @@ function Edit(props: EditProps) {
       }
 
       setMousePos(pixelCoord);
-
-      if (isPanning) {
-        setLivePanOffset({ x: (pixelCoord.x - panStartPos.x) / zoomLevel, y: (pixelCoord.y - panStartPos.y) / zoomLevel });
-      }
+      panHandleMouseMove(pixelCoord);
     }
-    // console.log("mouse pos", mousePos);
   }
   function handleMouseDown(e: React.MouseEvent) {
     // Only do this for primary click
@@ -129,8 +117,7 @@ function Edit(props: EditProps) {
       // Start panning if no nodes are hovered   
       if (hoveredNodes.length === 0) {
         // start panning
-        setPanStartPos(mousePos);
-        setIsPanning(true);
+        startPanning();
 
         // reset selected nodes
         setSelectedNodes([]);
@@ -141,16 +128,6 @@ function Edit(props: EditProps) {
         setDragStartPosWorld(mousePosWorld); // start dragging
       }
     }
-  }
-  function finishPanning() {
-    setIsPanning(false);
-    setSavedPanOffset({
-      x: livePanOffset.x + savedPanOffset.x,
-      y: livePanOffset.y + savedPanOffset.y,
-    });
-    setLivePanOffset({
-      x: 0, y: 0,
-    });
   }
   function mergeDraggedWithHovered() {
     // If one node is dragged on top of another node and released, they get merged into a single node
@@ -208,22 +185,22 @@ function Edit(props: EditProps) {
       }
 
       // Finish and apply panning and dragging
-      finishPanning();
-      finishDragging();
+      stopPanning();
+      stopDragging();
 
       // Merge hovered nodes with dragged node
       mergeDraggedWithHovered();
     }
   }
-  function finishDragging() {
+  function stopDragging() {
     setNodes(nodesWithDragOffset);
     setDragStartPosWorld(null);
   }
 
   // When the mouse exits the editing box, stop panning/dragging and allow scrolling again
   function handleMouseLeave() {
-    finishPanning();
-    finishDragging();
+    stopPanning();
+    stopDragging();
     stopZoomListen();
   }
   function handleMouseEnter() {
@@ -257,7 +234,7 @@ function Edit(props: EditProps) {
       <div className='edit-params'>
         <p>Edit</p>
         <button onClick={() => { resetZoomLevel(); }}>Reset zoom</button>
-        <button onClick={() => { setSavedPanOffset({ x: 0, y: 0 }); }}>Reset pan</button>
+        <button onClick={() => { resetPanOffset(); }}>Reset pan</button>
         {/* <pre>{JSON.stringify(dragStartPosWorld, null, 2)}</pre>
         <pre>{JSON.stringify(liveDragOffsetWorld, null, 2)}</pre> */}
 
