@@ -3,14 +3,13 @@ import { BoxProperties, Coordinate, boxParamsToGraph, PIXEL_TO_WORLD_FACTOR, gra
 import ScaleBar from '../ScaleBar';
 import { distance } from '../../geometry';
 import './Edit.css'
+import useZoom from './useZoom';
 
 type EditProps = {
   boxProperties: BoxProperties | undefined,
   setBoxProperties: React.Dispatch<React.SetStateAction<BoxProperties | undefined>>
 }
 
-const minZoom = 0.1;
-const maxZoom = 50;
 const NODE_RADIUS_PX = 13 / 2;
 
 function pixelToWorld(pixelCoord: Coordinate, pixelOffset: Coordinate, zoomLevel: number) {
@@ -43,14 +42,16 @@ function Edit(props: EditProps) {
   const [shiftHeld, setShiftHeld] = useState(false);
 
   // Zooming, panning and mouse variables
+  const editDivRef = useRef<HTMLDivElement>(null); // used to enable and disable zoom controls / scrolling
   const defaultZoom = 1.0;
-  const [zoomLevel, setZoomLevel] = useState(defaultZoom);
+  const minZoom = 0.1;
+  const maxZoom = 50;
+  const [zoomLevel, startZoomListen, stopZoomListen, resetZoomLevel] = useZoom(defaultZoom, maxZoom, minZoom, editDivRef);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [savedPanOffset, setSavedPanOffset] = useState({ x: 0, y: 0 });
   const [livePanOffset, setLivePanOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [panStartPos, setPanStartPos] = useState({ x: 0, y: 0 });
-  const editDivRef = useRef<HTMLDivElement>(null);
   const [dragStartPosWorld, setDragStartPosWorld] = useState<Coordinate | null>(null)
 
   // Do calculations for panning
@@ -162,7 +163,6 @@ function Edit(props: EditProps) {
           setNodes(prevNodes => {
             const newNodes = new Map(prevNodes);
             newNodes.delete(selectedId);
-            console.log(prevNodes, newNodes)
             return newNodes;
           })
           setEdges(prevEdges => {
@@ -224,38 +224,11 @@ function Edit(props: EditProps) {
   function handleMouseLeave() {
     finishPanning();
     finishDragging();
-    if (editDivRef && editDivRef.current) {
-      // Register our custom handleWheel function to prevent scrolling when mouse is over the edit div
-      editDivRef.current.removeEventListener('wheel', handleWheel, false)
-    }
+    stopZoomListen();
   }
   function handleMouseEnter() {
-    if (editDivRef && editDivRef.current) {
-      // Unregister our custom handleWheel function that prevents scrolling when mouse is over the edit div
-      editDivRef.current.addEventListener('wheel', handleWheel, { passive: false })
-    }
+    startZoomListen();
   }
-  function handleWheel(this: HTMLDivElement, e: WheelEvent) {
-    e.preventDefault() // stops from scrolling the rest of the page
-
-    // Set the new zoom level based on amount scrolled
-    // Specifically uses the functional update method rather than just setZoomLevel(newZoom),
-    // since this avoids the issue of the state becoming stale. 
-    // See https://stackoverflow.com/questions/55265255/react-usestate-hook-event-handler-using-initial-state 
-    setZoomLevel(oldZoom => {
-      const delta = e.deltaY * -0.0002;
-      const proposedZoom = oldZoom + delta * oldZoom;
-      let newZoom;
-      if (proposedZoom < minZoom) {
-        newZoom = minZoom;
-      } else if (proposedZoom > maxZoom) {
-        newZoom = maxZoom;
-      } else {
-        newZoom = proposedZoom;
-      }
-      return newZoom;
-    });
-  };
 
   function handleKeyPress(e: React.KeyboardEvent) {
     if (e.key === 'Shift') { // shift must be held for selection of more than one node
@@ -283,7 +256,7 @@ function Edit(props: EditProps) {
     <div className="edit-container">
       <div className='edit-params'>
         <p>Edit</p>
-        <button onClick={() => { setZoomLevel(defaultZoom); }}>Reset zoom</button>
+        <button onClick={() => { resetZoomLevel(); }}>Reset zoom</button>
         <button onClick={() => { setSavedPanOffset({ x: 0, y: 0 }); }}>Reset pan</button>
         {/* <pre>{JSON.stringify(dragStartPosWorld, null, 2)}</pre>
         <pre>{JSON.stringify(liveDragOffsetWorld, null, 2)}</pre> */}
