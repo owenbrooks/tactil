@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { BoxProperties, Coordinate, boxParamsToGraph, PIXEL_TO_WORLD_FACTOR, graphToBoxParams } from '../api/api';
-import ScaleBar from './ScaleBar';
-import { distance } from '../geometry';
+import { BoxProperties, Coordinate, boxParamsToGraph, PIXEL_TO_WORLD_FACTOR, graphToBoxParams } from '../../api/api';
+import ScaleBar from '../ScaleBar';
+import { distance } from '../../geometry';
 import './Edit.css'
 
 type EditProps = {
@@ -151,6 +151,36 @@ function Edit(props: EditProps) {
       x: 0, y: 0,
     });
   }
+  function mergeDraggedWithHovered() {
+    // If one node is dragged on top of another node and released, they get merged into a single node
+    // This only applies when a single node is being moved
+    if (dragStartPosWorld !== null) { // check that node is actually being dragged
+      if (selectedNodes.length === 1) {
+        const otherHoveredNodes = hoveredNodes.filter(id => id !== selectedNodes[0]);
+        if (otherHoveredNodes.length === 1 && selectedNodes[0] !== otherHoveredNodes[0]) {
+          const selectedId = selectedNodes[0]; // node being dragged (gets deleted)
+          setNodes(prevNodes => {
+            const newNodes = new Map(prevNodes);
+            newNodes.delete(selectedId);
+            console.log(prevNodes, newNodes)
+            return newNodes;
+          })
+          setEdges(prevEdges => {
+            const hoveredId = otherHoveredNodes[0]; // node being hovered (acquires new edges)
+            const newEdges = new Map(prevEdges);
+            prevEdges.forEach((edge, edgeId) => {
+              if (edge[0] === selectedId) {
+                newEdges.set(edgeId, [hoveredId, edge[1]]);
+              } else if (edge[1] === selectedId) {
+                newEdges.set(edgeId, [edge[0], hoveredId]);
+              }
+            });
+            return newEdges;
+          })
+        }
+      }
+    }
+  }
   function handleMouseUp(e: React.MouseEvent) {
     // Only work for primary button
     if (e.button === 0) {
@@ -177,10 +207,12 @@ function Edit(props: EditProps) {
         });
       }
 
+      // Finish and apply panning and dragging
       finishPanning();
-
-      // Finish and apply drag action
       finishDragging();
+
+      // Merge hovered nodes with dragged node
+      mergeDraggedWithHovered();
     }
   }
   function finishDragging() {

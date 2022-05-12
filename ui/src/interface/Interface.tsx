@@ -2,7 +2,7 @@ import './Interface.css'
 import { Routes, Route, Navigate } from "react-router-dom";
 import Upload from './Upload';
 import Generate from './Generate';
-import Edit from './Edit';
+import Edit from './editor/Edit';
 import { useState } from 'react';
 import { BoxProperties } from '../api/api';
 
