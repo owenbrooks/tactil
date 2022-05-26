@@ -62,9 +62,12 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], z_index=2, visualis
     min_cluster_size = 20 # points
     rem_small_tic = time.perf_counter()
     labels = dbscan_cluster(pcd, epsilon=0.2, min_points=10)
-    pcd = remove_small_clusters(pcd, labels, min_point_count=min_cluster_size)
     rem_small_toc = time.perf_counter()
-    print(f"Removed clusters smaller than {min_cluster_size} points in {rem_small_toc-rem_small_tic: 0.4f} seconds")
+    print(f"Performed clustering in {rem_small_toc-rem_small_tic: 0.4f} seconds")
+    if visualise:
+        o3d.visualization.draw_geometries([pcd])
+    pcd = remove_small_clusters(pcd, labels, min_point_count=min_cluster_size)
+    print(f"Removed clusters smaller than {min_cluster_size} points")
     if visualise:
         o3d.visualization.draw_geometries([pcd])
 
