@@ -38,14 +38,14 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], z_index=2, visualis
     pcd = vertical_threshold(pcd, threshold_height=max_height)
 
     # Display downsampled pcd with roof removed
-    downsampled_for_display = pcd.voxel_down_sample(voxel_size=0.05)
+    downsampled_for_display = pcd.voxel_down_sample(voxel_size=0.1)
 
     if visualise:
         o3d.visualization.draw_geometries([downsampled_for_display])
 
     # Downsample pcd
     pcd = pcd.voxel_down_sample(voxel_size=0.1)
-    print("Downsampled pcd")
+    print(f"Downsampled pcd. New length: {np.asarray(pcd.points).shape[0]}")
 
     # Filter out for only points that have close to horizontal normals
     normals = np.asarray(pcd.normals)
