@@ -7,7 +7,7 @@ from flask_cors import CORS
 import secrets
 
 UPLOAD_FOLDER = './pcd_uploads'
-ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'pcd', 'stl'}
+ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'pcd', 'xyz'}
 MAX_CONTENT_LENGTH = 16 * 1000 * 1000 * 1000
 OUTPUT_FOLDER = './stl_output'
 
