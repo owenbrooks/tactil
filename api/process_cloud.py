@@ -11,8 +11,9 @@ from pcd_operations import dbscan_cluster, remove_small_clusters, get_bounding_b
 from scipy import stats
 from scipy.spatial.transform import Rotation as R
 import math
+import uuid
 
-def process(pcd_path: typing.Union[str, bytes, os.PathLike], z_index=2, visualise=False):
+def process(pcd_path: typing.Union[str, bytes, os.PathLike], image_dir: typing.Union[str, bytes, os.PathLike], z_index=2, visualise=False):
     # o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Error)
     # Load pcd
     load_tic = time.perf_counter()
@@ -93,21 +94,6 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], z_index=2, visualis
     labels_unique = np.unique(labels)
     print(f"Meanshift normal clustering: found {len(labels_unique)} clusters in {ms_toc-ms_tic: 0.4f} seconds")
 
-
-    # Plot 3D gaussian map
-    # nx = unit_normals[:, 0]
-    # ny = unit_normals[:, 1]
-    # nz = unit_normals[:, 2]
-    # fig = go.Figure(data=[
-    #         go.Scatter3d(x=nx[::10], y=ny[::10], z=nz[::10], mode='markers', 
-    #             marker=dict(
-    #                 color=labels[::10],
-    #                 size=2,
-    #             ),
-    #         ), 
-    # ])
-    # fig.show()
-
     # Rotate pcd to align with primary direction
     most_common_label = stats.mode(labels).mode 
     biggest_normal_cluster = unit_normals[labels == most_common_label]
@@ -121,6 +107,23 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], z_index=2, visualis
     cluster.paint_uniform_color([1, 0.706, 0])
     if visualise:
         o3d.visualization.draw_geometries([pcd, cluster])
+
+    # Take picture of rotated pcd
+    downsampled_for_display.rotate(rotation_matrix)
+    image_filename = str(uuid.uuid4())+".png"
+    image_path = os.path.join(image_dir, image_filename)
+    vis = o3d.visualization.Visualizer()
+    vis.create_window(visible=False)
+    vis.add_geometry(downsampled_for_display)
+    vis.update_geometry(downsampled_for_display)
+    view_control = vis.get_view_control()
+    view_control.change_field_of_view(-90)
+    render_option = vis.get_render_option()
+    render_option.point_size = 3
+    vis.poll_events()
+    vis.update_renderer()
+    vis.capture_screen_image(image_path)
+    vis.destroy_window()
 
     # Separate pcd based on normal direction
     normal_clusters = []
@@ -220,13 +223,16 @@ if __name__ == "__main__":
     if len(sys.argv) > 2:
         visualise = sys.argv[2] == "visualise"
 
-    outputs = process(sys.argv[1], visualise=visualise)
+    # create output directories
+    output_dir = 'output'
+    image_dir = os.path.join(output_dir, 'images')
+    if not os.path.exists(image_dir):
+        os.mkdir(image_dir)
+
+    # process point cloud
+    outputs = process(sys.argv[1], image_dir, visualise=visualise)
 
     # save outputs to files
-    output_dir = 'output'
-    if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
-
     with open('output/centres.npy', 'wb') as f:
         np.save(f, np.array(outputs['box_centers']))
     with open('output/extents.npy', 'wb') as f:
