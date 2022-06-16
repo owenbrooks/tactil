@@ -17,17 +17,18 @@ def horizontal_normal_filter(pcd, epsilon):
     normals = np.asarray(pcd.normals)
     vertical = np.array([0.0, 1.0, 0.0])
     dot = np.array([np.dot(vertical, norm) for norm in normals])
-    horz_norms = np.arange(len(dot))[np.abs(dot)<epsilon]
+    horz_norms = np.arange(len(dot))[np.abs(dot) < epsilon]
     pcd = pcd.select_by_index(horz_norms)
     return pcd
 
 
 # Cluster using dbscan
 def dbscan_cluster(pcd, epsilon, min_points):
-    with o3d.utility.VerbosityContextManager(
-            o3d.utility.VerbosityLevel.Error) as cm:
-        labels = np.array(pcd.cluster_dbscan(eps=epsilon, min_points=min_points, print_progress=False))
-        # for an nx3 pcd, labels is nx1 integers, with -1 representing noise points, 
+    with o3d.utility.VerbosityContextManager(o3d.utility.VerbosityLevel.Error) as cm:
+        labels = np.array(
+            pcd.cluster_dbscan(eps=epsilon, min_points=min_points, print_progress=False)
+        )
+        # for an nx3 pcd, labels is nx1 integers, with -1 representing noise points,
         # and positive ints and 0 indicating which cluster a point belongs to
     max_label = labels.max()
     print(f"Point cloud has {max_label + 1} clusters")
@@ -39,22 +40,33 @@ def dbscan_cluster(pcd, epsilon, min_points):
 
 # Remove small clusters
 def remove_small_clusters(pcd, labels, min_point_count):
-    noise_label = np.amax(labels)+1
-    labels[labels == -1] = noise_label # need all non-negative for bincount
+    noise_label = np.amax(labels) + 1
+    labels[labels == -1] = noise_label  # need all non-negative for bincount
     count = np.bincount(labels)
     large_cluster_labels = np.unique(labels)[count > min_point_count]
     noise_points = np.argwhere(large_cluster_labels == noise_label)
-    large_cluster_labels = np.delete(large_cluster_labels, noise_points) # remove noise points which might otherwise form a big cluster
+    large_cluster_labels = np.delete(
+        large_cluster_labels, noise_points
+    )  # remove noise points which might otherwise form a big cluster
     is_large_cluster = np.in1d(labels, large_cluster_labels)
-    larger_cluster_indices = np.arange(np.asarray(pcd.points).shape[0])[is_large_cluster]
+    larger_cluster_indices = np.arange(np.asarray(pcd.points).shape[0])[
+        is_large_cluster
+    ]
     pcd = pcd.select_by_index(larger_cluster_indices)
     return pcd
 
 
 # Perform plane segmentation and get bounding boxes for vertical planes
-def segment_planes(pcd, distance_threshold, num_iterations, verticality_epsilon, min_plane_size, z_index):
-    segment_models=[]
-    segments=[]
+def segment_planes(
+    pcd,
+    distance_threshold,
+    num_iterations,
+    verticality_epsilon,
+    min_plane_size,
+    z_index,
+):
+    segment_models = []
+    segments = []
     rest = pcd
     max_plane_idx = 15
     # rest.paint_uniform_color([0.8, 0.8, 0.8])
@@ -64,7 +76,11 @@ def segment_planes(pcd, distance_threshold, num_iterations, verticality_epsilon,
         try:
             if len(np.asarray(rest.points)) < min_plane_size:
                 break
-            plane_model, inliers = rest.segment_plane(distance_threshold=distance_threshold,ransac_n=3,num_iterations=num_iterations)
+            plane_model, inliers = rest.segment_plane(
+                distance_threshold=distance_threshold,
+                ransac_n=3,
+                num_iterations=num_iterations,
+            )
             # filter for vertical planes (horizontal normals)
             normal = plane_model[0:3]
             vertical = np.array([0.0, 0.0, 0.0])
@@ -78,7 +94,7 @@ def segment_planes(pcd, distance_threshold, num_iterations, verticality_epsilon,
                 rest = rest.select_by_index(inliers, invert=True)
         except Exception as e:
             print(e)
-        
+
         # print("pass",i+1,"/",max_plane_idx,"done.")
 
     return segments, segment_models, rest
@@ -98,14 +114,18 @@ def get_bounding_boxes(segments):
     return line_sets, boxes
 
 
+# Separates one point cloud into a list of point clouds based on the
+# given cluster labels
 def separate_pcd_by_labels(pcd, labels):
-    """ pcd: open3d point cloud with N points
-        labels: 1xN numpy array of non-negative integers serving as point labels"""
+    """pcd: open3d point cloud with N points
+    labels: 1xN numpy array of non-negative integers serving as point labels"""
     clusters = []
 
-    for label in range(np.amax(labels)+1):
+    for label in range(np.amax(labels) + 1):
         current_cluster_mask = labels == label
-        current_cluster_indices = np.arange(np.asarray(pcd.points).shape[0])[current_cluster_mask]
+        current_cluster_indices = np.arange(np.asarray(pcd.points).shape[0])[
+            current_cluster_mask
+        ]
         cluster = pcd.select_by_index(current_cluster_indices)
         clusters.append(cluster)
 

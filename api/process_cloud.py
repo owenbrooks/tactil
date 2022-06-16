@@ -7,13 +7,26 @@ from sklearn.cluster import MeanShift, estimate_bandwidth
 import matplotlib.pyplot as plt
 import typing
 import os
-from pcd_operations import dbscan_cluster, remove_small_clusters, get_bounding_boxes, segment_planes, separate_pcd_by_labels, vertical_threshold
+from pcd_operations import (
+    dbscan_cluster,
+    remove_small_clusters,
+    get_bounding_boxes,
+    segment_planes,
+    separate_pcd_by_labels,
+    vertical_threshold,
+)
 from scipy import stats
 from scipy.spatial.transform import Rotation as R
 import math
 import uuid
 
-def process(pcd_path: typing.Union[str, bytes, os.PathLike], image_dir: typing.Union[str, bytes, os.PathLike], z_index=2, visualise=False):
+
+def process(
+    pcd_path: typing.Union[str, bytes, os.PathLike],
+    image_dir: typing.Union[str, bytes, os.PathLike],
+    z_index=2,
+    visualise=False,
+):
     # o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Error)
     # Load pcd
     load_tic = time.perf_counter()
@@ -23,14 +36,16 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], image_dir: typing.U
     print(f"Loaded pcd {pcd_path} in {load_toc-load_tic: 0.4f} seconds")
 
     # Create coordinate frame for visualisation
-    origin_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(size=0.6, origin=[0, 0, 0])
+    origin_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
+        size=0.6, origin=[0, 0, 0]
+    )
 
     # Switch vertical axis if specified
     if z_index != 2:
         pcd_points = np.asarray(pcd.points)
         pcd_normals = np.asarray(pcd.normals)
-        pcd_points[:, [2, z_index]] = pcd_points[:, [z_index, 2]] 
-        pcd_normals[:, [2, z_index]] = pcd_normals[:, [z_index, 2]] 
+        pcd_points[:, [2, z_index]] = pcd_points[:, [z_index, 2]]
+        pcd_normals[:, [2, z_index]] = pcd_normals[:, [z_index, 2]]
         pcd.points = o3d.cpu.pybind.utility.Vector3dVector(pcd_points)
         pcd.normals = o3d.cpu.pybind.utility.Vector3dVector(pcd_normals)
 
@@ -53,14 +68,16 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], image_dir: typing.U
     vertical = np.array([0.0, 0.0, 0.0])
     vertical[2] = 1.0
     dot = np.array([np.dot(vertical, norm) for norm in normals])
-    horz_norms = np.arange(len(dot))[np.abs(dot)<0.2]
+    horz_norms = np.arange(len(dot))[np.abs(dot) < 0.2]
     pcd = pcd.select_by_index(horz_norms)
-    print(f"Filtered for horizontal normals, new length: {np.asarray(pcd.points).shape[0]}")
+    print(
+        f"Filtered for horizontal normals, new length: {np.asarray(pcd.points).shape[0]}"
+    )
     if visualise:
         o3d.visualization.draw_geometries([pcd])
 
     # Perform dbscan clustering and remove small clusters
-    min_cluster_size = 20 # points
+    min_cluster_size = 20  # points
     rem_small_tic = time.perf_counter()
     labels = dbscan_cluster(pcd, epsilon=0.2, min_points=10)
     rem_small_toc = time.perf_counter()
@@ -77,9 +94,8 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], image_dir: typing.U
     step = 1
     normals = normals[::step, :]
     magnitudes = np.linalg.norm(normals, axis=1)
-    magnitudes[magnitudes==0] = 1e-6 # set 0 magnitude to very small value
+    magnitudes[magnitudes == 0] = 1e-6  # set 0 magnitude to very small value
     unit_normals = normals / magnitudes.reshape(-1, 1)
-
 
     # Compute clustering with MeanShift after estimating bandwidth
     bw_tic = time.perf_counter()
@@ -92,17 +108,23 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], image_dir: typing.U
     ms_toc = time.perf_counter()
     labels = ms.labels_
     labels_unique = np.unique(labels)
-    print(f"Meanshift normal clustering: found {len(labels_unique)} clusters in {ms_toc-ms_tic: 0.4f} seconds")
+    print(
+        f"Meanshift normal clustering: found {len(labels_unique)} clusters in {ms_toc-ms_tic: 0.4f} seconds"
+    )
 
     # Rotate pcd to align with primary direction
-    most_common_label = stats.mode(labels).mode 
+    most_common_label = stats.mode(labels).mode
     biggest_normal_cluster = unit_normals[labels == most_common_label]
     primary_normal_direction = np.mean(biggest_normal_cluster, axis=0)
-    z_angle = math.atan2(primary_normal_direction[1], primary_normal_direction[0]) - np.pi/2
-    rotation_matrix = np.linalg.inv(R.from_euler('xyz', [0, 0, z_angle]).as_matrix())
+    z_angle = (
+        math.atan2(primary_normal_direction[1], primary_normal_direction[0]) - np.pi / 2
+    )
+    rotation_matrix = np.linalg.inv(R.from_euler("xyz", [0, 0, z_angle]).as_matrix())
     pcd.rotate(rotation_matrix)
     print("Rotated to primary normal direction")
-    primary_cluster_indices = np.arange(len(np.asarray(pcd.points)))[labels == most_common_label]
+    primary_cluster_indices = np.arange(len(np.asarray(pcd.points)))[
+        labels == most_common_label
+    ]
     cluster = pcd.select_by_index(primary_cluster_indices)
     cluster.paint_uniform_color([1, 0.706, 0])
     if visualise:
@@ -110,7 +132,7 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], image_dir: typing.U
 
     # Take picture of rotated pcd
     downsampled_for_display.rotate(rotation_matrix)
-    image_filename = str(uuid.uuid4())+".png"
+    image_filename = str(uuid.uuid4()) + ".png"
     image_path = os.path.join(image_dir, image_filename)
     vis = o3d.visualization.Visualizer()
     vis.create_window(visible=False)
@@ -129,7 +151,10 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], image_dir: typing.U
     normal_clusters = []
     for i in range(len(labels_unique)):
         current_cluster_mask = labels == i
-        current_cluster_indices = np.arange(len(np.asarray(pcd.points)))[current_cluster_mask]
+        point_count = len(np.asarray(pcd.points))
+        current_cluster_indices = np.arange(point_count)[
+            current_cluster_mask
+        ]
         cluster = pcd.select_by_index(current_cluster_indices)
         normal_clusters.append(cluster)
 
@@ -138,28 +163,35 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], image_dir: typing.U
         for i in range(len(pcd_list)):
             colour = plt.get_cmap("tab20")(i)
             pcd_list[i].paint_uniform_color(list(colour[:3]))
-    
+
     if visualise:
         o3d.visualization.draw_geometries(normal_clusters)
-
 
     # Separate pcds further using dbscan clustering
     large_normal_clusters = []
     for norm_clust in normal_clusters:
         labels = dbscan_cluster(norm_clust, epsilon=0.2, min_points=10)
-        separated_clusters = separate_pcd_by_labels(norm_clust, labels) 
-        large_normal_clusters += separated_clusters[:-1] # removes last label which are "noise" points
+        separated_clusters = separate_pcd_by_labels(norm_clust, labels)
+        # remove last label which are "noise" points
+        large_normal_clusters += separated_clusters[:-1]  
 
     paint_pcd_list(normal_clusters)
     if visualise:
         o3d.visualization.draw_geometries(large_normal_clusters)
 
     # segment planes
-    planes = [] 
+    planes = []
     plane_models = []
     remaining_points = []
     for norm_clust in large_normal_clusters:
-        segments, segment_models, rest = segment_planes(norm_clust, distance_threshold=0.05, num_iterations=1000, verticality_epsilon=0.5, min_plane_size=100, z_index=2)
+        segments, segment_models, rest = segment_planes(
+            norm_clust,
+            distance_threshold=0.05,
+            num_iterations=1000,
+            verticality_epsilon=0.5,
+            min_plane_size=100,
+            z_index=2,
+        )
 
         # generate bounding boxes
         # line_sets = get_bounding_boxes(segments, segment_models)
@@ -176,7 +208,7 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], image_dir: typing.U
     # Flatten into 2D and downsample again
     def flatten(pcd):
         points = np.asarray(pcd.points)
-        points[:, 2] = 0.0 # flatten in z direction
+        points[:, 2] = 0.0  # flatten in z direction
         pcd.points = o3d.utility.Vector3dVector(points)
 
     for cloud in planes:
@@ -195,23 +227,29 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], image_dir: typing.U
         center = box.get_center()
         rotation = box.R
 
-        mesh = o3d.geometry.TriangleMesh.create_coordinate_frame().rotate(rotation).translate(center)
+        mesh = (
+            o3d.geometry.TriangleMesh.create_coordinate_frame()
+            .rotate(rotation)
+            .translate(center)
+        )
         frame_markers.append(mesh)
 
     if visualise:
-        o3d.visualization.draw_geometries(planes + line_sets + [origin_frame] + frame_markers)
+        o3d.visualization.draw_geometries(
+            planes + line_sets + [origin_frame] + frame_markers
+        )
 
     centers = [box.get_center().tolist() for box in boxes]
     extents = [box.extent.tolist() for box in boxes]
     rotations = [box.R.tolist() for box in boxes]
     outputs = {
-        'box_centers': centers,
-        'box_extents': extents,
-        'box_rotations': rotations,
+        "box_centers": centers,
+        "box_extents": extents,
+        "box_rotations": rotations,
     }
 
     print("Initial processing complete.")
-    return outputs 
+    return outputs
 
 
 if __name__ == "__main__":
@@ -220,8 +258,8 @@ if __name__ == "__main__":
         visualise = sys.argv[2] == "visualise"
 
     # create output directories
-    output_dir = 'output'
-    image_dir = os.path.join(output_dir, 'images')
+    output_dir = "output"
+    image_dir = os.path.join(output_dir, "images")
     if not os.path.exists(image_dir):
         os.mkdir(image_dir)
 
@@ -229,9 +267,9 @@ if __name__ == "__main__":
     outputs = process(sys.argv[1], image_dir, visualise=visualise)
 
     # save outputs to files
-    with open('output/centres.npy', 'wb') as f:
-        np.save(f, np.array(outputs['box_centers']))
-    with open('output/extents.npy', 'wb') as f:
-        np.save(f, np.array(outputs['box_extents']))
-    with open('output/rotations.npy', 'wb') as f:
-        np.save(f, np.array(outputs['box_rotations']))
+    with open("output/centres.npy", "wb") as f:
+        np.save(f, np.array(outputs["box_centers"]))
+    with open("output/extents.npy", "wb") as f:
+        np.save(f, np.array(outputs["box_extents"]))
+    with open("output/rotations.npy", "wb") as f:
+        np.save(f, np.array(outputs["box_rotations"]))
