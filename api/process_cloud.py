@@ -203,11 +203,7 @@ def process(pcd_path: typing.Union[str, bytes, os.PathLike], image_dir: typing.U
 
     centers = [box.get_center().tolist() for box in boxes]
     extents = [box.extent.tolist() for box in boxes]
-    # rotations = [np.linalg.inv(box.R).tolist() for box in boxes]
     rotations = [box.R.tolist() for box in boxes]
-    # centers = [boxes[0].get_center()]
-    # extents = [boxes[0].extent.tolist() ]
-    # rotations = [np.linalg.inv(boxes[0].R).tolist()]
     outputs = {
         'box_centers': centers,
         'box_extents': extents,
