@@ -8,8 +8,14 @@ import usePan from './usePan';
 
 type EditProps = {
   boxProperties: BoxProperties | undefined,
-  setBoxProperties: React.Dispatch<React.SetStateAction<BoxProperties | undefined>>
-}
+  setBoxProperties: React.Dispatch<React.SetStateAction<BoxProperties | undefined>>,
+  imagePath: string | undefined,
+};
+
+type ImageDimensions = {
+  width: number,
+  height: number,
+};
 
 const NODE_RADIUS_PX = 13 / 2;
 
@@ -38,6 +44,7 @@ function Edit(props: EditProps) {
   const [nodes, setNodes] = useState<Map<number, Coordinate>>(initialGraph.nodes);
   const [edges, setEdges] = useState<Map<number, [number, number]>>(initialGraph.edges);
   const [selectedNodes, setSelectedNodes] = useState<number[]>([]); // these numbers are keys to the nodes map
+  const [pcdImageDimensions, setPcdImageDimensions] = useState<ImageDimensions>({height: 0, width: 0});
 
   // Keyboard state
   const [shiftHeld, setShiftHeld] = useState(false);
@@ -229,6 +236,10 @@ function Edit(props: EditProps) {
     }
   }
 
+  function onImgLoad({target: img}: any) {
+    setPcdImageDimensions({height: img.offsetHeight, width: img.offsetWidth});
+  }
+
   return (
     <div className="edit-container">
       <div className='edit-params'>
@@ -250,6 +261,17 @@ function Edit(props: EditProps) {
         onKeyUp={handleKeyPress}
       >
         <>
+          <img src={"http://localhost:5000/./image_output/291162aa-91f3-4862-b337-444481d7092e.png"}
+            // style={{width: 100*zoomLevel+"%", marginLeft: "auto", marginRight: "auto"}} draggable={false}/>
+            style={{ 
+              // left: -0.2*pcdImageDimensions.width, 
+              // left: -0.01*1900,
+              left: -0.2/8*pcdImageDimensions.width,
+              top: 0, 
+              position: 'absolute',
+              width: '120%',
+              // marginLeft: "auto", marginRight: "auto"
+            }} draggable={false} onLoad={onImgLoad}/>
           {/* Nodes (circles)*/}
           {[...nodesWithDragOffset.entries()].map(([nodeId, node]) => {
             const pixelCoord = worldToPixel(node, combinedPanOffset, zoomLevel);

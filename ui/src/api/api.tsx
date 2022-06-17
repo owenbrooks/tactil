@@ -1,7 +1,8 @@
 import { distance } from "../geometry";
 
 export type ProcessReponse = {
-    box_outputs: BoxProperties
+    box_outputs: BoxProperties,
+    image_path: string | undefined,
     message: string,
 };
 

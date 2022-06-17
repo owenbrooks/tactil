@@ -8,6 +8,7 @@ const example_api_response = require('./example_api_response.json');
 
 type UploadProps = {
     setBoxProperties: React.Dispatch<React.SetStateAction<BoxProperties | undefined>>
+    setImagePath: React.Dispatch<React.SetStateAction<string | undefined>>
 }
 
 function Upload(props: UploadProps) {
@@ -49,6 +50,7 @@ function Upload(props: UploadProps) {
                         console.log(response)
                         setIsProcessing(false);
                         props.setBoxProperties(response.box_outputs);
+                        props.setImagePath(response.image_path)
                         navigate("/edit");
                     });
                 }

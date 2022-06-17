@@ -9,11 +9,12 @@ import { BoxProperties } from '../api/api';
 function Interface() {
 
   const [boxProperties, setBoxProperties] = useState<BoxProperties>();
+  const [imagePath, setImagePath] = useState<string>();
 
   return (
       <Routes>
-        <Route path="upload" element={<Upload setBoxProperties={setBoxProperties} />} />
-        <Route path="edit" element={<Edit boxProperties={boxProperties} setBoxProperties={setBoxProperties} />} />
+        <Route path="upload" element={<Upload setBoxProperties={setBoxProperties} setImagePath={setImagePath}/>} />
+        <Route path="edit" element={<Edit boxProperties={boxProperties} setBoxProperties={setBoxProperties} imagePath={imagePath}/>} />
         <Route path="generate" element={<Generate boxProperties={boxProperties}/>} />
         <Route
             path="*"
