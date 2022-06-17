@@ -5,3 +5,5 @@ __pycache__
 api/stl_output
 api/pcd_uploads
 output
+image_output
+target

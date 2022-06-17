@@ -10,6 +10,7 @@ UPLOAD_FOLDER = './pcd_uploads'
 ALLOWED_EXTENSIONS = {'txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'pcd', 'xyz'}
 MAX_CONTENT_LENGTH = 16 * 1000 * 1000 * 1000
 OUTPUT_FOLDER = './stl_output'
+IMAGE_FOLDER = './image_output'
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -33,10 +34,10 @@ def process_file():
         
     # TODO: validate filename
     cloud_path = os.path.join(UPLOAD_FOLDER, json['filename'])
-    box_outputs = process(cloud_path, visualise=False)
+    box_outputs, image_path = process(cloud_path, IMAGE_FOLDER, visualise=False)
 
     resp = jsonify({'message' : 'File successfully processed',
-                    'box_outputs': box_outputs})
+                    'box_outputs': box_outputs, 'image_path': image_path})
     resp.status_code = 200
     return resp
 
@@ -79,6 +80,10 @@ def upload_file():
 @app.route('/uploads/<name>')
 def download_file(name):
     return send_from_directory(app.config["UPLOAD_FOLDER"], name)
+
+@app.route('/image_output/<name>')
+def send_pcd_image(name):
+    return send_from_directory(IMAGE_FOLDER, name)
 
 @app.route('/generate/output')
 def download_output():

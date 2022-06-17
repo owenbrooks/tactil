@@ -14,11 +14,11 @@ from pcd_operations import (
     segment_planes,
     separate_pcd_by_labels,
     vertical_threshold,
+    save_image,
 )
 from scipy import stats
 from scipy.spatial.transform import Rotation as R
 import math
-import uuid
 
 
 def process(
@@ -132,20 +132,7 @@ def process(
 
     # Take picture of rotated pcd
     downsampled_for_display.rotate(rotation_matrix)
-    image_filename = str(uuid.uuid4()) + ".png"
-    image_path = os.path.join(image_dir, image_filename)
-    vis = o3d.visualization.Visualizer()
-    vis.create_window(visible=False)
-    vis.add_geometry(downsampled_for_display)
-    vis.update_geometry(downsampled_for_display)
-    view_control = vis.get_view_control()
-    view_control.change_field_of_view(-90)
-    render_option = vis.get_render_option()
-    render_option.point_size = 3
-    vis.poll_events()
-    vis.update_renderer()
-    vis.capture_screen_image(image_path)
-    vis.destroy_window()
+    image_path = save_image(downsampled_for_display, image_dir)
 
     # Separate pcd based on normal direction
     normal_clusters = []
@@ -249,7 +236,7 @@ def process(
     }
 
     print("Initial processing complete.")
-    return outputs
+    return outputs, image_path
 
 
 if __name__ == "__main__":
@@ -264,7 +251,7 @@ if __name__ == "__main__":
         os.mkdir(image_dir)
 
     # process point cloud
-    outputs = process(sys.argv[1], image_dir, visualise=visualise)
+    outputs, image_path = process(sys.argv[1], image_dir, visualise=visualise)
 
     # save outputs to files
     with open("output/centres.npy", "wb") as f:
