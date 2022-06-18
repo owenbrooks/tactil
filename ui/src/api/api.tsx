@@ -3,7 +3,13 @@ import { distance } from "../geometry";
 export type ProcessReponse = {
     box_outputs: BoxProperties,
     image_path: string | undefined,
+    image_dimensions: ImageDimensions,
     message: string,
+};
+
+export type ImageDimensions = {
+    width: number;
+    height: number;
 };
 
 export type BoxProperties = {
@@ -56,8 +62,8 @@ export function boxParamsToGraph(boxProperties: BoxProperties | undefined): Grap
     const apply_z_rot = (point: [number, number], angle_rad: number): Coordinate => {
         const cos_theta = Math.cos(angle_rad);
         const sin_theta = Math.sin(angle_rad);
-        const x = point[0]*cos_theta + point[1]*sin_theta;
-        const y = point[0]*sin_theta - point[1]*cos_theta;
+        const x = point[0] * cos_theta + point[1] * sin_theta;
+        const y = point[0] * sin_theta - point[1] * cos_theta;
         return {
             x: x,
             y: y,
@@ -80,7 +86,7 @@ export function boxParamsToGraph(boxProperties: BoxProperties | undefined): Grap
         const rotation = boxProperties.box_rotations[box];
 
         const z_rot_euler = Math.atan2(rotation[1][0], rotation[0][0]);
-        const x_coord = extent[0]/2
+        const x_coord = extent[0] / 2
         const x_coord_pos = Math.max(x_coord, 0)
         const x_coord_neg = Math.min(-x_coord, 0)
 
@@ -92,7 +98,7 @@ export function boxParamsToGraph(boxProperties: BoxProperties | undefined): Grap
         }
         const nodeA = apply_translation(nodeAAtOrigin, centre);
         const nodeB = apply_translation(nodeBAtOrigin, centre);
-        
+
         const indexA = nodes.size;
         const indexB = indexA + 1;
         nodes.set(indexA, nodeA);
@@ -101,9 +107,9 @@ export function boxParamsToGraph(boxProperties: BoxProperties | undefined): Grap
         // Create a new edge with id bigger than any existing edges
         let maxEdgeId = -1;
         if (edges.size > 0) {
-            maxEdgeId = [...edges.keys()].reduce((a, e ) => e > a ? e : a); // find maximum edgeId in the map
+            maxEdgeId = [...edges.keys()].reduce((a, e) => e > a ? e : a); // find maximum edgeId in the map
         }
-        edges.set(maxEdgeId+1, [indexA, indexB]);
+        edges.set(maxEdgeId + 1, [indexA, indexB]);
     }
 
     return {
@@ -132,8 +138,8 @@ export function graphToBoxParams(graph: Graph | undefined): BoxProperties {
             return; // exits loop early
         }
         const average: [number, number, number] = [
-            (nodeA.x+nodeB.x)/2,
-            (nodeA.y+nodeB.y)/2,
+            (nodeA.x + nodeB.x) / 2,
+            (nodeA.y + nodeB.y) / 2,
             0,
         ];
         box_centers.push(average);
@@ -146,7 +152,7 @@ export function graphToBoxParams(graph: Graph | undefined): BoxProperties {
         const zAngleRad = Math.atan2((nodeB.y - nodeA.y), (nodeB.x - nodeA.x));
         const cosTheta = Math.cos(zAngleRad);
         const sinTheta = Math.sin(zAngleRad);
-        const rotMatrix: [[number, number, number],[number, number, number],[number, number, number]] = [
+        const rotMatrix: [[number, number, number], [number, number, number], [number, number, number]] = [
             [cosTheta, -sinTheta, 0],
             [sinTheta, cosTheta, 0],
             [0, 0, 1]
@@ -157,6 +163,6 @@ export function graphToBoxParams(graph: Graph | undefined): BoxProperties {
     return {
         box_centers: box_centers as [number, number, number][],
         box_extents: box_extents as [number, number, number][],
-        box_rotations: box_rotations as [[number, number, number],[number, number, number],[number, number, number]][],
+        box_rotations: box_rotations as [[number, number, number], [number, number, number], [number, number, number]][],
     }
 }

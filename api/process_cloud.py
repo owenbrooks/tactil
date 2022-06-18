@@ -132,7 +132,7 @@ def process(
 
     # Take picture of rotated pcd
     downsampled_for_display.rotate(rotation_matrix)
-    image_path = save_image(downsampled_for_display, image_dir)
+    image_path, image_dimensions = save_image(downsampled_for_display, image_dir)
 
     # Separate pcd based on normal direction
     normal_clusters = []
@@ -236,7 +236,7 @@ def process(
     }
 
     print("Initial processing complete.")
-    return outputs, image_path
+    return outputs, image_path, image_dimensions
 
 
 if __name__ == "__main__":
@@ -251,7 +251,7 @@ if __name__ == "__main__":
         os.mkdir(image_dir)
 
     # process point cloud
-    outputs, image_path = process(sys.argv[1], image_dir, visualise=visualise)
+    outputs, image_path, image_dimensions = process(sys.argv[1], image_dir, visualise=visualise)
 
     # save outputs to files
     with open("output/centres.npy", "wb") as f:

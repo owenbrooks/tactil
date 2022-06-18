@@ -34,10 +34,10 @@ def process_file():
         
     # TODO: validate filename
     cloud_path = os.path.join(UPLOAD_FOLDER, json['filename'])
-    box_outputs, image_path = process(cloud_path, IMAGE_FOLDER, visualise=False)
+    box_outputs, image_path, image_dimensions = process(cloud_path, IMAGE_FOLDER, visualise=False)
 
     resp = jsonify({'message' : 'File successfully processed',
-                    'box_outputs': box_outputs, 'image_path': image_path})
+                    'box_outputs': box_outputs, 'image_path': image_path, 'image_dimensions': image_dimensions})
     resp.status_code = 200
     return resp
 

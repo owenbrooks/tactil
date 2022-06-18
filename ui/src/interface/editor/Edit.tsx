@@ -5,16 +5,13 @@ import { distance } from '../../geometry';
 import './Edit.css'
 import useZoom from './useZoom';
 import usePan from './usePan';
+import { ImageDimensions } from "../../api/api";
 
 type EditProps = {
   boxProperties: BoxProperties | undefined,
   setBoxProperties: React.Dispatch<React.SetStateAction<BoxProperties | undefined>>,
   imagePath: string | undefined,
-};
-
-type ImageDimensions = {
-  width: number,
-  height: number,
+  imageWorldDimensions: ImageDimensions | undefined,
 };
 
 const NODE_RADIUS_PX = 13 / 2;
@@ -44,7 +41,7 @@ function Edit(props: EditProps) {
   const [nodes, setNodes] = useState<Map<number, Coordinate>>(initialGraph.nodes);
   const [edges, setEdges] = useState<Map<number, [number, number]>>(initialGraph.edges);
   const [selectedNodes, setSelectedNodes] = useState<number[]>([]); // these numbers are keys to the nodes map
-  const [pcdImageDimensions, setPcdImageDimensions] = useState<ImageDimensions>({height: 0, width: 0});
+  const [pcdImageDimensions, setPcdImageDimensions] = useState<ImageDimensions>({ height: 0, width: 0 });
 
   // Keyboard state
   const [shiftHeld, setShiftHeld] = useState(false);
@@ -236,9 +233,14 @@ function Edit(props: EditProps) {
     }
   }
 
-  function onImgLoad({target: img}: any) {
-    setPcdImageDimensions({height: img.offsetHeight, width: img.offsetWidth});
+  function onImgLoad({ target: img }: any) {
+    setPcdImageDimensions({ height: img.offsetHeight, width: img.offsetWidth });
   }
+
+  // calculate width and height for display of pcd image
+  const imageDisplayDimensions = worldToPixel({ x: props.imageWorldDimensions?.width ?? 0, y: props.imageWorldDimensions?.height ?? 0 }, { x: 0, y: 0 }, zoomLevel);
+  const image_left = 'calc(' + -imageDisplayDimensions.x / 2 + 'px + 50%)';
+  const image_top = 'calc(' + imageDisplayDimensions.y / 2 + 'px + 50%)';
 
   return (
     <div className="edit-container">
@@ -261,17 +263,16 @@ function Edit(props: EditProps) {
         onKeyUp={handleKeyPress}
       >
         <>
-          <img src={"http://localhost:5000/./image_output/291162aa-91f3-4862-b337-444481d7092e.png"}
-            // style={{width: 100*zoomLevel+"%", marginLeft: "auto", marginRight: "auto"}} draggable={false}/>
-            style={{ 
-              // left: -0.2*pcdImageDimensions.width, 
-              // left: -0.01*1900,
-              left: -0.2/8*pcdImageDimensions.width,
-              top: 0, 
+        <img src={"http://localhost:5000/./image_output/f9fff180-7302-4b2c-9e3f-541d6934cc75.png"}
+          // <img src={"http://localhost:5000/" + props.imagePath}
+          style={{
+              left: image_left,
+              top: image_top,
               position: 'absolute',
-              width: '120%',
-              // marginLeft: "auto", marginRight: "auto"
-            }} draggable={false} onLoad={onImgLoad}/>
+              width: imageDisplayDimensions.x,
+              height: imageDisplayDimensions.y,
+              pointerEvents: 'none',
+            }} draggable={false} onLoad={onImgLoad} />
           {/* Nodes (circles)*/}
           {[...nodesWithDragOffset.entries()].map(([nodeId, node]) => {
             const pixelCoord = worldToPixel(node, combinedPanOffset, zoomLevel);

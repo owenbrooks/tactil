@@ -2,13 +2,15 @@ import React, { SyntheticEvent, useState } from 'react';
 import './Interface.css'
 import { useNavigate } from "react-router-dom";
 import { ProcessReponse, postData, BoxProperties } from '../api/api';
+import { ImageDimensions } from "../api/api";
 const upload_url = "http://localhost:5000/upload"
 const process_url = "http://localhost:5000/process"
 const example_api_response = require('./example_api_response.json');
 
 type UploadProps = {
-    setBoxProperties: React.Dispatch<React.SetStateAction<BoxProperties | undefined>>
-    setImagePath: React.Dispatch<React.SetStateAction<string | undefined>>
+    setBoxProperties: React.Dispatch<React.SetStateAction<BoxProperties | undefined>>,
+    setImagePath: React.Dispatch<React.SetStateAction<string | undefined>>,
+    setImageWorldDimensions: React.Dispatch<React.SetStateAction<ImageDimensions | undefined>>,
 }
 
 function Upload(props: UploadProps) {
@@ -50,7 +52,8 @@ function Upload(props: UploadProps) {
                         console.log(response)
                         setIsProcessing(false);
                         props.setBoxProperties(response.box_outputs);
-                        props.setImagePath(response.image_path)
+                        props.setImagePath(response.image_path);
+                        props.setImageWorldDimensions(response.image_dimensions)
                         navigate("/edit");
                     });
                 }
