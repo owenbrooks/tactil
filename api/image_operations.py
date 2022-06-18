@@ -1,12 +1,62 @@
 import numpy as np
-from typing import Tuple
 from dataclasses import dataclass
+import open3d as o3d
+import os
+import typing
+import uuid
 
 @dataclass
-class Dimension:
+class Dimensions:
     """Class for storing 2D dimensions."""
     width: float
     height: float
+
+@dataclass
+class Coordinate:
+    x: float
+    y: float
+
+@dataclass
+class ImageInfo:
+    """Class for storing location, size and origin of image."""
+    path: str
+    world_dimensions: Dimensions
+    origin_camera: Coordinate
+
+# Save image to be viewed in the editor
+def save_image(
+    pcd, image_dir: typing.Union[str, bytes, os.PathLike]
+) -> ImageInfo:
+    # create output directory if it doesn't exist
+    if not os.path.exists(image_dir):
+        os.mkdir(image_dir)
+
+    image_filename = str(uuid.uuid4()) + ".png"
+    image_path = os.path.join(image_dir, image_filename)
+    vis = o3d.visualization.Visualizer()
+    vis.create_window(visible=False)
+    vis.add_geometry(pcd)
+    vis.update_geometry(pcd)
+    view_control = vis.get_view_control()
+
+    # compute real-world image width
+    camera_params = view_control.convert_to_pinhole_camera_parameters()
+    image_dimensions = image_width_from_params(camera_params)
+    print(image_dimensions.width, image_dimensions.height)
+
+    view_control.change_field_of_view(-90)
+    render_option = vis.get_render_option()
+    render_option.point_size = 3
+    vis.poll_events()
+    vis.update_renderer()
+    vis.capture_screen_image(image_path)
+    vis.destroy_window()
+
+    origin_camera = find_origin_camera(camera_params)
+    print(origin_camera)
+
+    return ImageInfo(image_path, image_dimensions, origin_camera)
+
 
 def normalise_homogeneous_coords(coords: np.array) -> np.array:
     """:param coords: Nx1 vector of homogeneous coordinates 
@@ -35,7 +85,18 @@ def image_to_camera_frame(K: np.array, p: np.array):
     return np.array([x, y, z])
 
 
-def image_width_from_params(camera_params) -> Dimension:
+def find_origin_camera(camera_params) -> Coordinate:
+    """ Computes the xy location of the world origin in the camera frame (camera frame at center of image) """
+    extr = camera_params.extrinsic
+    origin_world = np.array([0, 0, 0, 1]) # homogenous coordinate
+    origin_camera = extr @ origin_world
+
+    origin_camera = Coordinate(origin_camera[0], origin_camera[1])
+
+    return origin_camera
+
+
+def image_width_from_params(camera_params) -> Dimensions:
     """Computes real-world width and height
     :param camera_params: open3d view_control.convert_to_pinhole_camera_parameters()
     :return: (width, height) """
@@ -67,7 +128,7 @@ def image_width_from_params(camera_params) -> Dimension:
     width = distance(top_left_world, top_right_world)
     height = distance(top_left_world, bottom_left_world)
 
-    return Dimension(width, height)
+    return Dimensions(width, height)
 
 
 def distance(point_a: np.array, point_b: np.array):

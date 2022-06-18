@@ -2,15 +2,20 @@ import { distance } from "../geometry";
 
 export type ProcessReponse = {
     box_outputs: BoxProperties,
-    image_path: string | undefined,
-    image_dimensions: ImageDimensions,
+    pcd_image_info: ImageInfo,
     message: string,
 };
 
-export type ImageDimensions = {
+export type Dimensions = {
     width: number;
     height: number;
 };
+
+export type ImageInfo = {
+    path: string | undefined,
+    world_dimensions: Dimensions, // height and width of the image in metres
+    origin_camera: Coordinate, // world origin expressed in camera frame, metres (camera frame at center of image)
+}
 
 export type BoxProperties = {
     box_centers: Array<[number, number, number]>,

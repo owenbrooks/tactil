@@ -1,12 +1,6 @@
 import numpy as np
 import open3d as o3d
 import matplotlib.pyplot as plt
-import uuid
-import os
-import typing
-from typing import Tuple
-
-from projective_geometry import image_width_from_params, Dimension
 
 
 # Max vertical threhold
@@ -137,34 +131,3 @@ def separate_pcd_by_labels(pcd, labels):
 
     return clusters
 
-
-# Save image to be viewed in the editor
-def save_image(
-    pcd, image_dir: typing.Union[str, bytes, os.PathLike]
-) -> Tuple[str, Dimension]:
-    # create output directory if it doesn't exist
-    if not os.path.exists(image_dir):
-        os.mkdir(image_dir)
-
-    image_filename = str(uuid.uuid4()) + ".png"
-    image_path = os.path.join(image_dir, image_filename)
-    vis = o3d.visualization.Visualizer()
-    vis.create_window(visible=False)
-    vis.add_geometry(pcd)
-    vis.update_geometry(pcd)
-    view_control = vis.get_view_control()
-
-    # compute real-world image width
-    camera_params = view_control.convert_to_pinhole_camera_parameters()
-    image_dimensions = image_width_from_params(camera_params)
-    print(image_dimensions.width, image_dimensions.height)
-
-    view_control.change_field_of_view(-90)
-    render_option = vis.get_render_option()
-    render_option.point_size = 3
-    vis.poll_events()
-    vis.update_renderer()
-    vis.capture_screen_image(image_path)
-    vis.destroy_window()
-
-    return (image_path, image_dimensions)

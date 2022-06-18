@@ -1,17 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { BoxProperties, Coordinate, boxParamsToGraph, PIXEL_TO_WORLD_FACTOR, graphToBoxParams } from '../../api/api';
+import { BoxProperties, Coordinate, boxParamsToGraph, PIXEL_TO_WORLD_FACTOR, graphToBoxParams, ImageInfo } from '../../api/api';
 import ScaleBar from '../ScaleBar';
 import { distance } from '../../geometry';
 import './Edit.css'
 import useZoom from './useZoom';
 import usePan from './usePan';
-import { ImageDimensions } from "../../api/api";
+import { Dimensions } from "../../api/api";
 
 type EditProps = {
   boxProperties: BoxProperties | undefined,
   setBoxProperties: React.Dispatch<React.SetStateAction<BoxProperties | undefined>>,
-  imagePath: string | undefined,
-  imageWorldDimensions: ImageDimensions | undefined,
+  pcdImageInfo: ImageInfo | undefined,
 };
 
 const NODE_RADIUS_PX = 13 / 2;
@@ -41,7 +40,7 @@ function Edit(props: EditProps) {
   const [nodes, setNodes] = useState<Map<number, Coordinate>>(initialGraph.nodes);
   const [edges, setEdges] = useState<Map<number, [number, number]>>(initialGraph.edges);
   const [selectedNodes, setSelectedNodes] = useState<number[]>([]); // these numbers are keys to the nodes map
-  const [pcdImageDimensions, setPcdImageDimensions] = useState<ImageDimensions>({ height: 0, width: 0 });
+  const [pcdImageDimensions, setPcdImageDimensions] = useState<Dimensions>({ height: 0, width: 0 });
 
   // Keyboard state
   const [shiftHeld, setShiftHeld] = useState(false);
@@ -110,7 +109,6 @@ function Edit(props: EditProps) {
         x: e.nativeEvent.offsetX - editFrameElem.clientWidth / 2,
         y: e.nativeEvent.offsetY - editFrameElem.clientHeight / 2,
       }
-
       setMousePos(pixelCoord);
       panHandleMouseMove(pixelCoord);
     }
@@ -238,9 +236,23 @@ function Edit(props: EditProps) {
   }
 
   // calculate width and height for display of pcd image
-  const imageDisplayDimensions = worldToPixel({ x: props.imageWorldDimensions?.width ?? 0, y: props.imageWorldDimensions?.height ?? 0 }, { x: 0, y: 0 }, zoomLevel);
-  const image_left = 'calc(' + -imageDisplayDimensions.x / 2 + 'px + 50%)';
-  const image_top = 'calc(' + imageDisplayDimensions.y / 2 + 'px + 50%)';
+  const imageDisplayDimensions = worldToPixel({
+    x: props.pcdImageInfo?.world_dimensions?.width ?? 0,
+    y: props.pcdImageInfo?.world_dimensions?.height ?? 0
+  },
+    { x: 0, y: 0 }, zoomLevel
+  );
+  // calculate offsets for image
+  const worldOffset = worldToPixel({
+    x: -(props.pcdImageInfo?.origin_camera.x ?? 0),
+    y: props.pcdImageInfo?.origin_camera?.y ?? 0,
+  }, combinedPanOffset, zoomLevel);
+  const totalOffset = {
+    x: worldOffset.x - imageDisplayDimensions.x / 2,
+    y: worldOffset.y + imageDisplayDimensions.y / 2
+  }
+  const image_left = 'calc(' + totalOffset.x + 'px + 50%)';
+  const image_top = 'calc(' + totalOffset.y + 'px + 50%)';
 
   return (
     <div className="edit-container">
@@ -263,9 +275,9 @@ function Edit(props: EditProps) {
         onKeyUp={handleKeyPress}
       >
         <>
-        <img src={"http://localhost:5000/./image_output/f9fff180-7302-4b2c-9e3f-541d6934cc75.png"}
-          // <img src={"http://localhost:5000/" + props.imagePath}
-          style={{
+          {/* <img src={"http://localhost:5000/./image_output/f9fff180-7302-4b2c-9e3f-541d6934cc75.png"} */}
+            <img src={"http://localhost:5000/" + props.pcdImageInfo?.path}
+            style={{
               left: image_left,
               top: image_top,
               position: 'absolute',

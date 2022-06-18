@@ -14,8 +14,8 @@ from pcd_operations import (
     segment_planes,
     separate_pcd_by_labels,
     vertical_threshold,
-    save_image,
 )
+from image_operations import ImageInfo, save_image
 from scipy import stats
 from scipy.spatial.transform import Rotation as R
 import math
@@ -26,7 +26,7 @@ def process(
     image_dir: typing.Union[str, bytes, os.PathLike],
     z_index=2,
     visualise=False,
-):
+) -> ImageInfo:
     # o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Error)
     # Load pcd
     load_tic = time.perf_counter()
@@ -57,7 +57,7 @@ def process(
     downsampled_for_display = pcd.voxel_down_sample(voxel_size=0.1)
 
     if visualise:
-        o3d.visualization.draw_geometries([downsampled_for_display])
+        o3d.visualization.draw_geometries([downsampled_for_display, origin_frame])
 
     # Downsample pcd
     pcd = pcd.voxel_down_sample(voxel_size=0.1)
@@ -132,7 +132,7 @@ def process(
 
     # Take picture of rotated pcd
     downsampled_for_display.rotate(rotation_matrix)
-    image_path, image_dimensions = save_image(downsampled_for_display, image_dir)
+    image_info = save_image(downsampled_for_display, image_dir)
 
     # Separate pcd based on normal direction
     normal_clusters = []
@@ -236,7 +236,7 @@ def process(
     }
 
     print("Initial processing complete.")
-    return outputs, image_path, image_dimensions
+    return outputs, image_info
 
 
 if __name__ == "__main__":
@@ -251,7 +251,7 @@ if __name__ == "__main__":
         os.mkdir(image_dir)
 
     # process point cloud
-    outputs, image_path, image_dimensions = process(sys.argv[1], image_dir, visualise=visualise)
+    outputs, image_info = process(sys.argv[1], image_dir, visualise=visualise)
 
     # save outputs to files
     with open("output/centres.npy", "wb") as f:
