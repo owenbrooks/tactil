@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { BoxProperties, Coordinate, boxParamsToGraph, PIXEL_TO_WORLD_FACTOR, graphToBoxParams, ImageInfo } from '../../api/api';
+import { BoxProperties, Coordinate, boxParamsToGraph, graphToBoxParams, ImageInfo } from '../../api/api';
 import ScaleBar from '../ScaleBar';
-import { distance } from '../../geometry';
 import './Edit.css'
 import useZoom from './useZoom';
 import usePan from './usePan';
-import { Dimensions } from "../../api/api";
+import Graph from './Graph';
+import { worldToPixel, pixelToWorld, distance } from '../../geometry';
+import PcdImage from './PcdImage';
 
 type EditProps = {
   boxProperties: BoxProperties | undefined,
@@ -15,32 +16,12 @@ type EditProps = {
 
 const NODE_RADIUS_PX = 13 / 2;
 
-function pixelToWorld(pixelCoord: Coordinate, pixelOffset: Coordinate, zoomLevel: number) {
-  const x = PIXEL_TO_WORLD_FACTOR * (pixelCoord.x - pixelOffset.x) / zoomLevel;
-  const y = PIXEL_TO_WORLD_FACTOR * (pixelCoord.y - pixelOffset.x) / zoomLevel;
-
-  return {
-    x: x,
-    y: y,
-  }
-}
-
-function worldToPixel(worldCoord: Coordinate, pixelOffset: Coordinate, zoomLevel: number) {
-  const x = worldCoord.x * zoomLevel / PIXEL_TO_WORLD_FACTOR + pixelOffset.x * zoomLevel;
-  const y = worldCoord.y * zoomLevel / PIXEL_TO_WORLD_FACTOR + pixelOffset.y * zoomLevel;
-  return {
-    x: x,
-    y: -y, // negative y since pixel coordinate system is reversed
-  }
-}
-
 function Edit(props: EditProps) {
 
   const initialGraph = boxParamsToGraph(props.boxProperties);
   const [nodes, setNodes] = useState<Map<number, Coordinate>>(initialGraph.nodes);
   const [edges, setEdges] = useState<Map<number, [number, number]>>(initialGraph.edges);
   const [selectedNodes, setSelectedNodes] = useState<number[]>([]); // these numbers are keys to the nodes map
-  const [pcdImageDimensions, setPcdImageDimensions] = useState<Dimensions>({ height: 0, width: 0 });
 
   // Keyboard state
   const [shiftHeld, setShiftHeld] = useState(false);
@@ -98,7 +79,7 @@ function Edit(props: EditProps) {
       return false; // early return if value somehow not present
     }
     const pixelCoord = worldToPixel(node, combinedPanOffset, zoomLevel);
-    return distance(mousePos, pixelCoord) < NODE_RADIUS_PX;;
+    return distance(mousePos, pixelCoord) < NODE_RADIUS_PX;
   });
 
   // Zooming, panning and mouse controls
@@ -231,29 +212,6 @@ function Edit(props: EditProps) {
     }
   }
 
-  function onImgLoad({ target: img }: any) {
-    setPcdImageDimensions({ height: img.offsetHeight, width: img.offsetWidth });
-  }
-
-  // calculate width and height for display of pcd image
-  const imageDisplayDimensions = worldToPixel({
-    x: props.pcdImageInfo?.world_dimensions?.width ?? 0,
-    y: props.pcdImageInfo?.world_dimensions?.height ?? 0
-  },
-    { x: 0, y: 0 }, zoomLevel
-  );
-  // calculate offsets for image
-  const worldOffset = worldToPixel({
-    x: -(props.pcdImageInfo?.origin_camera.x ?? 0),
-    y: props.pcdImageInfo?.origin_camera.y ?? 0,
-  }, combinedPanOffset, zoomLevel);
-  const totalOffset = {
-    x: worldOffset.x - imageDisplayDimensions.x / 2,
-    y: worldOffset.y + imageDisplayDimensions.y / 2
-  }
-  const image_left = 'calc(' + totalOffset.x + 'px + 50%)';
-  const image_top = 'calc(' + totalOffset.y + 'px + 50%)';
-
   return (
     <div className="edit-container">
       <div className='edit-params'>
@@ -275,60 +233,16 @@ function Edit(props: EditProps) {
         onKeyUp={handleKeyPress}
       >
         <>
-          {/* <img src={"http://localhost:5000/./image_output/f9fff180-7302-4b2c-9e3f-541d6934cc75.png"} */}
-            {props.pcdImageInfo && <img src={"http://localhost:5000/" + props.pcdImageInfo.path}
-            style={{
-              left: image_left,
-              top: image_top,
-              position: 'absolute',
-              width: imageDisplayDimensions.x,
-              height: imageDisplayDimensions.y,
-              pointerEvents: 'none',
-            }} draggable={false} onLoad={onImgLoad} />}
-          {/* Nodes (circles)*/}
-          {[...nodesWithDragOffset.entries()].map(([nodeId, node]) => {
-            const pixelCoord = worldToPixel(node, combinedPanOffset, zoomLevel);
-            const left = 'calc(' + pixelCoord.x + 'px + 50%)';
-            const top = 'calc(' + pixelCoord.y + 'px + 50%';
-            const isHovered = distance(mousePos, pixelCoord) < NODE_RADIUS_PX;
-            const isSelected = selectedNodes.indexOf(nodeId) >= 0;
-            const className = 'node' + (isHovered ? ' hovered' : '') + (isSelected ? ' selected' : '');
-            return <div className={className} style={{ left: left, top: top, position: 'absolute', height: NODE_RADIUS_PX * 2, width: NODE_RADIUS_PX * 2 }} key={nodeId} ></div>
-          })}
-          {/* Edges (lines)*/}
-          {[...edges.entries()].map(([edgeId, edge]) => {
-            const nodeA = nodesWithDragOffset.get(edge[0]);
-            const nodeB = nodesWithDragOffset.get(edge[1]);
-
-            if (nodeA === undefined || nodeB === undefined) {
-              console.error("Mismatch between nodes and edges");
-              return null; // early exit
-            }
-
-            const averagePos = {
-              x: (nodeA.x + nodeB.x) / 2,
-              y: (nodeA.y + nodeB.y) / 2
-            };
-            const averagePosPixel = worldToPixel(averagePos, combinedPanOffset, zoomLevel);
-            const length = Math.sqrt((nodeA.x - nodeB.x) ** 2 + (nodeA.y - nodeB.y) ** 2) * zoomLevel / PIXEL_TO_WORLD_FACTOR;
-            const thickness = 4;
-            const angle = Math.atan2(-(nodeB.y - nodeA.y), (nodeB.x - nodeA.x)) * (180 / Math.PI); // negative because of reversed y coordinate frame
-            return <div key={edgeId} className="edge" style={{
-              padding: '0px',
-              margin: '0px',
-              height: thickness + 'px',
-              width: length + 'px',
-              backgroundColor: "black",
-              lineHeight: '1px',
-              position: 'absolute',
-              left: "calc(" + averagePosPixel.x + "px + 50%)",
-              top: "calc(" + averagePosPixel.y.toString() + "px + 50%)",
-              // ['MozTransform' as any]: 'rotate(' + -angle + 'deg) translate(-50%, -50%)',
-              // ['WebkitTransform' as any]: 'rotate(' + -angle + 'deg); translate(-50%, -50%)',
-              // ['MsTransform' as any]: 'rotate(' + -angle + 'deg) translate(-50%, -50%)',
-              transform: "translate(-50%, -50%) rotate(" + angle + "deg) ",
-            }}> </div>
-          })}
+          {props.pcdImageInfo &&
+            <PcdImage zoomLevel={zoomLevel} panOffset={combinedPanOffset} imageInfo={props.pcdImageInfo} />
+          }
+          <Graph zoomLevel={zoomLevel}
+            nodesWithDragOffset={nodes}
+            edges={edges}
+            combinedPanOffset={combinedPanOffset}
+            nodeRadiusPx={NODE_RADIUS_PX}
+            selectedNodes={selectedNodes}
+            hoveredNodes={hoveredNodes} />
           <ScaleBar zoomLevel={zoomLevel} />
         </>
       </div>
