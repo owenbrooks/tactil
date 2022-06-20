@@ -29,7 +29,7 @@ def save_image(
 ) -> ImageInfo:
     # create output directory if it doesn't exist
     if not os.path.exists(image_dir):
-        os.mkdir(image_dir)
+        os.makedirs(image_dir, exist_ok=True)
 
     image_filename = str(uuid.uuid4()) + ".png"
     image_path = os.path.join(image_dir, image_filename)
@@ -38,6 +38,7 @@ def save_image(
     vis.add_geometry(pcd)
     vis.update_geometry(pcd)
     view_control = vis.get_view_control()
+    view_control.set_zoom(0.4)
 
     # compute real-world image width
     camera_params = view_control.convert_to_pinhole_camera_parameters()
