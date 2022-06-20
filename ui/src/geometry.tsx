@@ -5,8 +5,8 @@ export function distance(pointA: Coordinate, pointB: Coordinate) {
 }
 
 export function pixelToWorld(pixelCoord: Coordinate, pixelOffset: Coordinate, zoomLevel: number) {
-    const x = PIXEL_TO_WORLD_FACTOR * (pixelCoord.x - pixelOffset.x) / zoomLevel;
-    const y = PIXEL_TO_WORLD_FACTOR * (pixelCoord.y - pixelOffset.x) / zoomLevel;
+    const x = PIXEL_TO_WORLD_FACTOR * (pixelCoord.x - pixelOffset.x*zoomLevel) / zoomLevel;
+    const y = PIXEL_TO_WORLD_FACTOR * (-pixelCoord.y - pixelOffset.y*zoomLevel) / zoomLevel;
 
     return {
         x: x,

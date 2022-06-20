@@ -1,7 +1,7 @@
 import { Coordinate, PIXEL_TO_WORLD_FACTOR } from '../../api/api';
 import { worldToPixel } from '../../geometry';
 
-type GraphProps = {
+type GraphViewProps = {
     nodesWithDragOffset: Map<number, Coordinate>,
     edges: Map<number, [number, number]>,
     selectedNodes: number[], // list of nodeId's
@@ -11,7 +11,7 @@ type GraphProps = {
     combinedPanOffset: Coordinate,
 };
 
-function Graph(props: GraphProps) {
+function GraphView(props: GraphViewProps) {
     const { zoomLevel, nodesWithDragOffset, edges, combinedPanOffset, selectedNodes, hoveredNodes, nodeRadiusPx } = props;
 
     return <>
@@ -20,7 +20,7 @@ function Graph(props: GraphProps) {
             const pixelCoord = worldToPixel(node, combinedPanOffset, zoomLevel);
             const left = 'calc(' + pixelCoord.x + 'px + 50%)';
             const top = 'calc(' + pixelCoord.y + 'px + 50%';
-            const isHovered = hoveredNodes[nodeId];
+            const isHovered = hoveredNodes.indexOf(nodeId) >= 0;
             const isSelected = selectedNodes.indexOf(nodeId) >= 0;
             const className = 'node' + (isHovered ? ' hovered' : '') + (isSelected ? ' selected' : '');
             return <div className={className} style={{ left: left, top: top, position: 'absolute', height: nodeRadiusPx * 2, width: nodeRadiusPx * 2 }} key={nodeId} ></div>
@@ -62,4 +62,4 @@ function Graph(props: GraphProps) {
     </>
 }
 
-export default Graph;
+export default GraphView;

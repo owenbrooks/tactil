@@ -49,7 +49,7 @@ export type Coordinate = {
     y: number,
 };
 
-type Graph = {
+export type Graph = {
     nodes: Map<number, Coordinate>,
     edges: Map<number, [number, number]>,
 };
