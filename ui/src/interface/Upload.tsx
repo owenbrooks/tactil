@@ -62,6 +62,7 @@ function Upload(props: UploadProps) {
             // Provide a test api response in dev mode
             if (isDevEnvironment) {
                 props.setBoxProperties(example_api_response.box_outputs);
+                props.setPcdImageInfo(example_api_response.pcd_image_info);
                 navigate("/edit");
             } 
         }

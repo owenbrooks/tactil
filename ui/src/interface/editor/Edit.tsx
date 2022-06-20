@@ -109,7 +109,6 @@ function Edit(props: EditProps) {
         x: e.nativeEvent.offsetX - editFrameElem.clientWidth / 2,
         y: e.nativeEvent.offsetY - editFrameElem.clientHeight / 2,
       }
-      console.log(pixelCoord)
       setMousePos(pixelCoord);
       panHandleMouseMove(pixelCoord);
     }
@@ -277,7 +276,7 @@ function Edit(props: EditProps) {
       >
         <>
           {/* <img src={"http://localhost:5000/./image_output/f9fff180-7302-4b2c-9e3f-541d6934cc75.png"} */}
-            <img src={"http://localhost:5000/" + props.pcdImageInfo?.path}
+            {props.pcdImageInfo && <img src={"http://localhost:5000/" + props.pcdImageInfo.path}
             style={{
               left: image_left,
               top: image_top,
@@ -285,7 +284,7 @@ function Edit(props: EditProps) {
               width: imageDisplayDimensions.x,
               height: imageDisplayDimensions.y,
               pointerEvents: 'none',
-            }} draggable={false} onLoad={onImgLoad} />
+            }} draggable={false} onLoad={onImgLoad} />}
           {/* Nodes (circles)*/}
           {[...nodesWithDragOffset.entries()].map(([nodeId, node]) => {
             const pixelCoord = worldToPixel(node, combinedPanOffset, zoomLevel);
