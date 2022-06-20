@@ -5,7 +5,7 @@ tmux send-keys 'source env/bin/activate'
 tmux send-keys Enter C-l
 tmux new-window
 tmux select-window -t 1
-tmux send-keys 'cd api && flask run'
+tmux send-keys 'cd api && FLASK_ENV=development flask run'
 tmux split-window -h
 tmux send-keys 'cd ui && npm start'
 tmux split-window -v

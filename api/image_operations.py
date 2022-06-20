@@ -44,7 +44,11 @@ def save_image(
     image_dimensions = image_width_from_params(camera_params)
     print(image_dimensions.width, image_dimensions.height)
 
-    view_control.change_field_of_view(-90)
+    # decrease field of view to make wall boundaries more clear
+    desired_field_of_view = 1.0
+    current_field_of_view = view_control.get_field_of_view()
+    view_control.change_field_of_view(desired_field_of_view-current_field_of_view)
+
     render_option = vis.get_render_option()
     render_option.point_size = 3
     vis.poll_events()
@@ -106,13 +110,9 @@ def image_width_from_params(camera_params) -> Dimensions:
         camera_params.intrinsic.width,
         camera_params.intrinsic.height,
     )
-    print(camera_width, camera_height)
     intr = camera_params.intrinsic.intrinsic_matrix
     extr = camera_params.extrinsic
-    print(f"intr: \n{intr}\nextr: \n{extr}")
-    inv_intr = np.linalg.inv(intr)
-    inv_extr = np.linalg.inv(extr)
-    print(f"inv_intr: \n{inv_intr}\ninv_extr: \n{inv_extr}")
+    # print(f"intr: \n{intr}\nextr: \n{extr}")
 
     # define points at the image boundary
     top_left_cam = np.array([-camera_width / 2, -camera_height / 2, camera_z_coord])

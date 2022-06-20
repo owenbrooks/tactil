@@ -119,19 +119,21 @@ def process(
     z_angle = (
         math.atan2(primary_normal_direction[1], primary_normal_direction[0]) - np.pi / 2
     )
-    rotation_matrix = np.linalg.inv(R.from_euler("xyz", [0, 0, z_angle]).as_matrix())
-    pcd.rotate(rotation_matrix)
+    rotation_matrix = R.from_euler("xyz", [0, 0, -z_angle]).as_matrix()
+    pcd.rotate(rotation_matrix, center=(0, 0, 0))
     print("Rotated to primary normal direction")
-    primary_cluster_indices = np.arange(len(np.asarray(pcd.points)))[
-        labels == most_common_label
-    ]
-    cluster = pcd.select_by_index(primary_cluster_indices)
-    cluster.paint_uniform_color([1, 0.706, 0])
+
+    # Visualise primary cluster
     if visualise:
-        o3d.visualization.draw_geometries([pcd, cluster])
+        primary_cluster_indices = np.arange(len(np.asarray(pcd.points)))[
+            labels == most_common_label
+        ]
+        primary_cluster = pcd.select_by_index(primary_cluster_indices)
+        primary_cluster.paint_uniform_color([1, 0.706, 0])
+        o3d.visualization.draw_geometries([pcd, primary_cluster])
 
     # Take picture of rotated pcd
-    downsampled_for_display.rotate(rotation_matrix)
+    downsampled_for_display.rotate(rotation_matrix, center=(0, 0, 0))
     image_info = save_image(downsampled_for_display, image_dir)
 
     # Separate pcd based on normal direction
@@ -201,12 +203,10 @@ def process(
     for cloud in planes:
         flatten(cloud)
 
-    # pcd = pcd.voxel_down_sample(voxel_size=0.05)
     line_sets, boxes = get_bounding_boxes(planes)
     if visualise:
-        # o3d.visualization.draw_geometries(planes + line_sets + [origin_frame])
-        o3d.visualization.draw_geometries([planes[0], line_sets[0], origin_frame])
-    # o3d.visualization.draw_geometries(line_sets)
+        o3d.visualization.draw_geometries(planes + line_sets + [origin_frame])
+        # o3d.visualization.draw_geometries([planes[0], line_sets[0], origin_frame])
 
     # display frame markers for each box
     frame_markers = []

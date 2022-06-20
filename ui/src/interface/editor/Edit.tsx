@@ -109,6 +109,7 @@ function Edit(props: EditProps) {
         x: e.nativeEvent.offsetX - editFrameElem.clientWidth / 2,
         y: e.nativeEvent.offsetY - editFrameElem.clientHeight / 2,
       }
+      console.log(pixelCoord)
       setMousePos(pixelCoord);
       panHandleMouseMove(pixelCoord);
     }
@@ -245,7 +246,7 @@ function Edit(props: EditProps) {
   // calculate offsets for image
   const worldOffset = worldToPixel({
     x: -(props.pcdImageInfo?.origin_camera.x ?? 0),
-    y: props.pcdImageInfo?.origin_camera?.y ?? 0,
+    y: props.pcdImageInfo?.origin_camera.y ?? 0,
   }, combinedPanOffset, zoomLevel);
   const totalOffset = {
     x: worldOffset.x - imageDisplayDimensions.x / 2,
