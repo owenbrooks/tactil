@@ -79,15 +79,25 @@ export default function useMouseControl(
                             nodes: new Map(prevGraph.nodes),
                             edges: new Map(prevGraph.edges),
                         };
-                        // delected moving node
                         newGraph.nodes.delete(selectedId);
                         // update edges
                         const hoveredId = otherHoveredNodes[0]; // node being hovered (acquires new edges)
                         prevGraph.edges.forEach((edge, edgeId) => {
-                            if (edge[0] === selectedId) {
-                                newGraph.edges.set(edgeId, [hoveredId, edge[1]]);
-                            } else if (edge[1] === selectedId) {
-                                newGraph.edges.set(edgeId, [edge[0], hoveredId]);
+                            const selectedA = selectedId === edge[0];
+                            const selectedB = selectedId === edge[1];
+
+                            const remainingEdgeId = selectedA ? edge[1] : edge[0];
+                            if (selectedA || selectedB) {
+                                if (remainingEdgeId === hoveredId) {
+                                    newGraph.edges.delete(edgeId) // edge is collapsed, delete it
+                                }
+                                else { // update edge with new id
+                                    if (selectedA) {
+                                        newGraph.edges.set(edgeId, [hoveredId, remainingEdgeId]);
+                                    } else if (selectedB) {
+                                        newGraph.edges.set(edgeId, [remainingEdgeId, hoveredId]);
+                                    }
+                                }
                             }
                         });
 
