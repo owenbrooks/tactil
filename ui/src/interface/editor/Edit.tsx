@@ -7,7 +7,8 @@ import usePan from './usePan';
 import GraphView from './Graph';
 import PcdImage from './PcdImage';
 import useAddNode, { concatUnplaced } from './useAddNode';
-import useMouseControl from './useMouseControl';
+import useDrag, { findHoveredIds } from './useDrag';
+import { useSelected } from './useSelected';
 
 type EditProps = {
   boxProperties: BoxProperties | undefined,
@@ -33,7 +34,6 @@ function Edit(props: EditProps) {
   const [graph, setGraph] = useState<Graph>(initialGraph)
 
   // Keyboard state
-  const [shiftHeld, setShiftHeld] = useState(false);
   const [controlHeld, setControlHeld] = useState(false);
 
   // Zooming, panning and mouse variables
@@ -53,15 +53,20 @@ function Edit(props: EditProps) {
   const { unplacedId, unplacedCoord, handleClickAddNode } =
     useAddNode(mousePos, editorMode, graph, setGraph, viewState);
   const graphWithUnplaced = concatUnplaced(graph, unplacedId, unplacedCoord, editorMode);
+
+  // Determine nodes under the mouse cursor
+  const hoveredNodes = findHoveredIds(mousePos, viewState, graphWithUnplaced, NODE_RADIUS_PX);
+  const hoveredNodesWithUnplaced = unplacedId ? [...hoveredNodes, unplacedId] : [...hoveredNodes];
+
+  const { selectedNodes, deselectAll, selectionHandleClick, selectionHandleKeyPress } = useSelected(hoveredNodes, setGraph);
+
   const {
-    selectedNodes,
-    deleteSelectedNodes,
-    stopDragging,
-    handleMouseUp: handleMouseUpControl,
-    handleMouseDown: handleMouseDownControl,
-    hoveredNodesWithUnplaced,
-    nodesWithDragOffset,
-  } = useMouseControl(graphWithUnplaced, setGraph, unplacedId, mousePos, viewState, shiftHeld, NODE_RADIUS_PX, editorMode);
+    isDragging,
+    cancelDragging,
+    handleMouseUpControl,
+    handleMouseDownControl,
+    handleMouseMoveControl,
+  } = useDrag(graphWithUnplaced, setGraph, unplacedId, mousePos, viewState, hoveredNodes, selectedNodes, deselectAll, editorMode);
 
   // Update graph when nodes or edges are changed
   const { setBoxProperties } = props;
@@ -81,13 +86,13 @@ function Edit(props: EditProps) {
       setMousePos(pixelCoord);
       panHandleMouseMove(pixelCoord);
     }
+    handleMouseMoveControl();
   }
   function handleMouseDown(e: React.MouseEvent) {
-    console.log(e.button)
     if (e.button === 0) { // Only do this for primary click
       handleMouseDownControl(e);
     }
-    if (hoveredNodesWithUnplaced.length === 0) {
+    if (hoveredNodes.length === 0) {
       // Start panning if no nodes are hovered   
       panHandleMouseDown(e, controlHeld);
     }
@@ -99,12 +104,13 @@ function Edit(props: EditProps) {
       handleMouseUpControl(e);
     }
     panHandleMouseUp(e, controlHeld);
+    selectionHandleClick(isDragging);
   }
 
   // When the mouse exits the editing box, stop panning/dragging and allow scrolling again
   function handleMouseLeave() {
     stopPanning();
-    stopDragging();
+    cancelDragging();
     stopZoomListen();
   }
   function handleMouseEnter() {
@@ -112,13 +118,9 @@ function Edit(props: EditProps) {
   }
 
   function handleKeyPress(e: React.KeyboardEvent) {
-    if (e.key === 'Shift') { // shift must be held for selection of more than one node
-      setShiftHeld(e.type === 'keydown')
-    } else if (e.key === 'Control') {
+    selectionHandleKeyPress(e);
+    if (e.key === 'Control') {
       setControlHeld(e.type === 'keydown');
-    }
-    else if (e.key === 'Delete') {
-      deleteSelectedNodes();
     } else if (e.key === 'n' && e.type === 'keydown') {
       // Enter mode to add nodes
       if (editorMode === EditorMode.Edit) {
@@ -155,7 +157,7 @@ function Edit(props: EditProps) {
           }
           <GraphView
             zoomLevel={zoomLevel}
-            nodesWithDragOffset={nodesWithDragOffset}
+            nodesWithDragOffset={graph.nodes}
             edges={graph.edges}
             combinedPanOffset={combinedPanOffset}
             nodeRadiusPx={NODE_RADIUS_PX}
