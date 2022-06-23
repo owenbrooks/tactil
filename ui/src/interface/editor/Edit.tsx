@@ -60,7 +60,7 @@ function Edit(props: EditProps) {
     handleMouseDown: handleMouseDownControl,
     hoveredNodesWithUnplaced,
     nodesWithDragOffset,
-  } = useMouseControl(graphWithUnplaced, setGraph, unplacedId, mousePos, viewState, shiftHeld, NODE_RADIUS_PX);
+  } = useMouseControl(graphWithUnplaced, setGraph, unplacedId, mousePos, viewState, shiftHeld, NODE_RADIUS_PX, editorMode);
 
   // Update graph when nodes or edges are changed
   const { setBoxProperties } = props;

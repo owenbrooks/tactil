@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Coordinate, Graph } from "../../api/api";
 import { distance, pixelToWorld, worldToPixel } from "../../geometry";
-import { ViewState } from "./Edit";
+import Edit, { EditorMode, ViewState } from "./Edit";
 
 export default function useMouseControl(
     graphWithUnplaced: Graph,
@@ -11,6 +11,7 @@ export default function useMouseControl(
     viewState: ViewState,
     shiftHeld: boolean,
     nodeRadiusPx: number,
+    editorMode: EditorMode,
 ) {
     const [selectedNodes, setSelectedNodes] = useState<number[]>([]); // these numbers are keys to the nodes map
     const [dragStartPosWorld, setDragStartPosWorld] = useState<Coordinate | null>(null)
@@ -26,22 +27,22 @@ export default function useMouseControl(
             return null;
         }
     })();
-    let nodesWithDragOffset: Map<number, Coordinate> = new Map();
+    let nodesWithDragOffsetWithUnplaced: Map<number, Coordinate> = new Map();
     graphWithUnplaced.nodes.forEach((node, nodeId) => {
         if (selectedNodes.indexOf(nodeId) >= 0 && liveDragOffsetWorld != null && nodeId !== unplacedId) {
             // Add drag offset to selected nodes
-            nodesWithDragOffset.set(nodeId, {
+            nodesWithDragOffsetWithUnplaced.set(nodeId, {
                 x: node.x + liveDragOffsetWorld.x,
                 y: node.y + liveDragOffsetWorld.y,
             });
         } else {
-            nodesWithDragOffset.set(nodeId, node);
+            nodesWithDragOffsetWithUnplaced.set(nodeId, node);
         }
     });
 
     // Find nodes under the mouse cursor
-    const hoveredNodes = [...nodesWithDragOffset.keys()].filter((nodeId) => {
-        const node = nodesWithDragOffset.get(nodeId);
+    const hoveredNodes = [...nodesWithDragOffsetWithUnplaced.keys()].filter((nodeId) => {
+        const node = nodesWithDragOffsetWithUnplaced.get(nodeId);
         if (node === undefined) {
             return false; // early return if value somehow not present
         }
@@ -110,7 +111,8 @@ export default function useMouseControl(
     function handleMouseUp(e: React.MouseEvent) {
         // Only work for primary button
         if (e.button === 0) {
-            if (liveDragOffsetWorld === null || (liveDragOffsetWorld.x === 0 && liveDragOffsetWorld.y === 0)) { // only if weren't previously dragging
+            const wasDragging = liveDragOffsetWorld === null || (liveDragOffsetWorld.x === 0 && liveDragOffsetWorld.y === 0);
+            if (wasDragging) { // only if weren't previously dragging
                 setSelectedNodes(prevSelected => {
                     const isAlreadySelected = hoveredNodes.some(nodeId => {
                         return prevSelected.indexOf(nodeId) >= 0;
@@ -140,6 +142,12 @@ export default function useMouseControl(
         }
     }
     function stopDragging() {
+        // Filter out unplaced node
+        const nodesWithDragOffset = new Map(nodesWithDragOffsetWithUnplaced);
+        if (unplacedId !== null) {
+            nodesWithDragOffset.delete(unplacedId);
+        }
+        // Save new coordinates
         setGraph({
             nodes: nodesWithDragOffset,
             edges: graphWithUnplaced.edges,
@@ -177,6 +185,6 @@ export default function useMouseControl(
         handleMouseUp,
         handleMouseDown,
         hoveredNodesWithUnplaced,
-        nodesWithDragOffset,
+        nodesWithDragOffset: nodesWithDragOffsetWithUnplaced,
     }
 }
