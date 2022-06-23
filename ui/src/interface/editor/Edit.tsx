@@ -34,6 +34,7 @@ function Edit(props: EditProps) {
 
   // Keyboard state
   const [shiftHeld, setShiftHeld] = useState(false);
+  const [controlHeld, setControlHeld] = useState(false);
 
   // Zooming, panning and mouse variables
   const editDivRef = useRef<HTMLDivElement>(null); // used to enable and disable zoom controls / scrolling
@@ -42,7 +43,7 @@ function Edit(props: EditProps) {
   const maxZoom = 50;
   const [zoomLevel, startZoomListen, stopZoomListen, resetZoomLevel] = useZoom(defaultZoom, maxZoom, minZoom, editDivRef);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-  const [combinedPanOffset, startPanning, stopPanning, panHandleMouseMove, resetPanOffset] = usePan(zoomLevel, mousePos);
+  const [combinedPanOffset, panHandleMouseDown, panHandleMouseUp, stopPanning, panHandleMouseMove, resetPanOffset] = usePan(zoomLevel, mousePos);
   const viewState: ViewState = {
     panOffset: combinedPanOffset,
     zoomLevel,
@@ -82,13 +83,13 @@ function Edit(props: EditProps) {
     }
   }
   function handleMouseDown(e: React.MouseEvent) {
-    // Only do this for primary click
-    if (e.button === 0) {
-      // Start panning if no nodes are hovered   
-      if (hoveredNodesWithUnplaced.length === 0) {
-        startPanning();
-      }
+    console.log(e.button)
+    if (e.button === 0) { // Only do this for primary click
       handleMouseDownControl(e);
+    }
+    if (hoveredNodesWithUnplaced.length === 0) {
+      // Start panning if no nodes are hovered   
+      panHandleMouseDown(e, controlHeld);
     }
   }
   function handleMouseUp(e: React.MouseEvent) {
@@ -96,8 +97,8 @@ function Edit(props: EditProps) {
     if (e.button === 0) {
       // Finish and apply panning and dragging
       handleMouseUpControl(e);
-      stopPanning();
     }
+    panHandleMouseUp(e, controlHeld);
   }
 
   // When the mouse exits the editing box, stop panning/dragging and allow scrolling again
@@ -113,7 +114,10 @@ function Edit(props: EditProps) {
   function handleKeyPress(e: React.KeyboardEvent) {
     if (e.key === 'Shift') { // shift must be held for selection of more than one node
       setShiftHeld(e.type === 'keydown')
-    } else if (e.key === 'Delete') {
+    } else if (e.key === 'Control') {
+      setControlHeld(e.type === 'keydown');
+    }
+    else if (e.key === 'Delete') {
       deleteSelectedNodes();
     } else if (e.key === 'n' && e.type === 'keydown') {
       // Enter mode to add nodes
