@@ -103,6 +103,7 @@ function Edit(props: EditProps) {
       panHandleMouseDown(e, controlHeld);
     }
     handleClickAddNode();
+    selectionHandleClick(isDragging);
   }
   function handleMouseUp(e: React.MouseEvent) {
     // Finish and apply panning and dragging
@@ -154,6 +155,7 @@ function Edit(props: EditProps) {
       if (!extendingEdge) {
         setEditorMode(EditorMode.Edit)
       }
+      deselectAll();
     } else if (e.key === 'z' && e.type === 'keydown' && e.ctrlKey) {
       handleUndo();
     } else if (e.key === 'y' && e.type === 'keydown' && e.ctrlKey) {
@@ -187,9 +189,7 @@ function Edit(props: EditProps) {
           <button onClick={stopAdding} disabled={editorMode == EditorMode.Edit}>Stop adding</button>
           <button onClick={deleteSelectedNodes} disabled={selectedNodes.length === 0}>Delete selected</button>
         </div>
-        {/* <pre>{JSON.stringify(dragStartPosWorld, null, 2)}</pre>
-        <pre>{JSON.stringify(liveDragOffsetWorld, null, 2)}</pre> */}
-
+        {/* <pre>{JSON.stringify(isDragging)}</pre> */}
       </div>
       <div className='edit-frame' id="edit-frame" ref={editDivRef}
         tabIndex={-1}

@@ -23,7 +23,6 @@ export default function useDrag(
     editorMode: EditorMode,
 ) {
     const [dragStartPosWorld, setDragStartPosWorld] = useState<Coordinate | null>(null);
-    const isDragging = dragStartPosWorld !== null;
 
     const mousePosWorld = pixelToWorld(mousePos, viewState.panOffset, viewState.zoomLevel);
 
@@ -37,6 +36,7 @@ export default function useDrag(
             return null;
         }
     })();
+    const isDragging = liveDragOffsetWorld !== null && liveDragOffsetWorld.x !== 0 && liveDragOffsetWorld.y !== 0;
 
     // add drag offset to relevant nodes
     const nodesWithDragOffset = new Map(graph.nodes);
@@ -58,9 +58,9 @@ export default function useDrag(
 
 
     function stopDragging() {
-        const isDragging = dragStartPosWorld !== null;
         if (isDragging) {
-            setGraph(graphWithDragOffset);
+            const afterHoveredDraggedMerge = mergeDraggedWithHovered(graphWithDragOffset, hoveredNodes, selectedNodes);
+            setGraph(afterHoveredDraggedMerge);
         }
         setDragStartPosWorld(null);
     }
@@ -72,10 +72,7 @@ export default function useDrag(
             if (hoveredNodes.length === 0) {
                 // reset selected nodes
                 deselectAll();
-            }
-            // If nodes are hovered, and they have been selected, start dragging
-            const hoveredNodeAlreadySelected = hoveredNodes.some((nodeId) => selectedNodes.indexOf(nodeId) >= 0);
-            if (hoveredNodeAlreadySelected) {
+            } else {
                 setDragStartPosWorld(mousePosWorld); // start dragging
             }
         }
@@ -83,60 +80,53 @@ export default function useDrag(
     function dragHandleMouseUp(e: React.MouseEvent) {
         // Only work for primary button
         if (e.button === 0) {
-            if (isDragging) {
-                stopDragging();
-                // Merge hovered nodes with dragged node
-                mergeDraggedWithHovered();
-            }
-        }
-    }
-
-    function mergeDraggedWithHovered() {
-        // If one node is dragged on top of another node and released, they get merged into a single node
-        // This only applies when a single node is being moved
-        if (dragStartPosWorld !== null) { // check that node is actually being dragged
-            if (selectedNodes.length === 1) {
-                const otherHoveredNodes = hoveredNodes.filter(id => id !== selectedNodes[0]);
-                if (otherHoveredNodes.length === 1 && selectedNodes[0] !== otherHoveredNodes[0]) {
-                    const selectedId = selectedNodes[0]; // node being dragged (gets deleted)
-                    // copy old graph
-                    const newGraph = {
-                        nodes: new Map(graph.nodes),
-                        edges: new Map(graph.edges),
-                    };
-                    newGraph.nodes.delete(selectedId);
-                    // update edges
-                    const hoveredId = otherHoveredNodes[0]; // node being hovered (acquires new edges)
-                    graph.edges.forEach((edge, edgeId) => {
-                        const selectedA = selectedId === edge[0];
-                        const selectedB = selectedId === edge[1];
-
-                        const remainingEdgeId = selectedA ? edge[1] : edge[0];
-                        if (selectedA || selectedB) {
-                            if (remainingEdgeId === hoveredId) {
-                                newGraph.edges.delete(edgeId) // edge is collapsed, delete it
-                            }
-                            else { // update edge with new id
-                                if (selectedA) {
-                                    newGraph.edges.set(edgeId, [hoveredId, remainingEdgeId]);
-                                } else if (selectedB) {
-                                    newGraph.edges.set(edgeId, [remainingEdgeId, hoveredId]);
-                                }
-                            }
-                        }
-                    });
-                    setGraph(newGraph);
-                }
-            }
+            stopDragging();
         }
     }
 
     return {
         isDragging,
-        mergeDraggedWithHovered,
         cancelDragging: stopDragging,
         dragHandleMouseUp,
         dragHandleMouseDown,
         graphWithDragOffset,
     }
+}
+
+// If one node is dragged on top of another node and released, they get merged into a single node
+// This only applies when a single node is being moved
+function mergeDraggedWithHovered(graphWithDragOffset: Graph, hoveredNodes: number[], selectedNodes: number[]) {
+    // copy old graph
+    const newGraph = {
+        nodes: new Map(graphWithDragOffset.nodes),
+        edges: new Map(graphWithDragOffset.edges),
+    };
+    if (selectedNodes.length === 1) {
+        const otherHoveredNodes = hoveredNodes.filter(id => id !== selectedNodes[0]);
+        if (otherHoveredNodes.length === 1 && selectedNodes[0] !== otherHoveredNodes[0]) {
+            const selectedId = selectedNodes[0]; // node being dragged (gets deleted)
+            newGraph.nodes.delete(selectedId);
+            // update edges
+            const hoveredId = otherHoveredNodes[0]; // node being hovered (acquires new edges)
+            graphWithDragOffset.edges.forEach((edge, edgeId) => {
+                const selectedA = selectedId === edge[0];
+                const selectedB = selectedId === edge[1];
+
+                const remainingEdgeId = selectedA ? edge[1] : edge[0];
+                if (selectedA || selectedB) {
+                    if (remainingEdgeId === hoveredId) {
+                        newGraph.edges.delete(edgeId) // edge is collapsed, delete it
+                    }
+                    else { // update edge with new id
+                        if (selectedA) {
+                            newGraph.edges.set(edgeId, [hoveredId, remainingEdgeId]);
+                        } else if (selectedB) {
+                            newGraph.edges.set(edgeId, [remainingEdgeId, hoveredId]);
+                        }
+                    }
+                }
+            });
+        }
+    }
+    return newGraph;
 }

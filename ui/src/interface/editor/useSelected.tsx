@@ -18,24 +18,19 @@ export function useSelected(hoveredNodes: number[], graph: Graph, setGraph: (new
         setSelectedNodes([]);
     }
 
+    // select nodes on mousedown
     function selectionHandleClick(isDragging: boolean) {
         if (!isDragging && editorMode !== EditorMode.Add) {
             setSelectedNodes(prevSelected => {
                 const isAlreadySelected = hoveredNodes.some(nodeId => {
                     return prevSelected.indexOf(nodeId) >= 0;
                 });
-                // Deselect hovered nodes if any were previously selected and shift is held down
-                if (shiftHeld) {
-                    // Remove clicked nodes if they were already selected
-                    if (isAlreadySelected) {
-                        const newSelected = prevSelected.filter(nodeId => {
-                            return hoveredNodes.indexOf(nodeId) < 0;
-                        });
-                        return newSelected;
-                    } else { // Otherwise add them to selection
-                        const newSelected = prevSelected.concat(hoveredNodes);
-                        return newSelected;
-                    }
+                if (isAlreadySelected) { // Don't change selection
+                    return prevSelected;
+                }
+                if (shiftHeld) { // Add newly clicked nodes to selection
+                    const newSelected = prevSelected.concat(hoveredNodes);
+                    return newSelected;
                 } else { // if shift isn't held, change selection to only currently hovered nodes
                     return hoveredNodes;
                 }
@@ -44,7 +39,6 @@ export function useSelected(hoveredNodes: number[], graph: Graph, setGraph: (new
     }
 
     function deleteSelectedNodes() {
-        console.log("delete selected")
         // Remove selected nodes
         // copy old graph
         const newGraph = {
