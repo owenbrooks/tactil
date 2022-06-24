@@ -6,7 +6,7 @@ import useZoom from './useZoom';
 import usePan from './usePan';
 import GraphView from './Graph';
 import PcdImage from './PcdImage';
-import useAddNode, { concatUnplaced } from './useAddNode';
+import useAddNode from './useAddNode';
 import useDrag, { findHoveredIds } from './useDrag';
 import { useSelected } from './useSelected';
 
@@ -26,7 +26,7 @@ export enum EditorMode {
   Add = 2
 }
 
-const NODE_RADIUS_PX = 13 / 2;
+const NODE_RADIUS_PX = 13 / 2; // used for mouse overlap detection and drawing
 
 function Edit(props: EditProps) {
 
@@ -38,7 +38,7 @@ function Edit(props: EditProps) {
 
   // Zooming, panning and mouse variables
   const editDivRef = useRef<HTMLDivElement>(null); // used to enable and disable zoom controls / scrolling
-  const defaultZoom = 1.0;
+  const defaultZoom = 2.0;
   const minZoom = 0.1;
   const maxZoom = 50;
   const [zoomLevel, startZoomListen, stopZoomListen, resetZoomLevel] = useZoom(defaultZoom, maxZoom, minZoom, editDivRef);
@@ -48,25 +48,20 @@ function Edit(props: EditProps) {
     panOffset: combinedPanOffset,
     zoomLevel,
   };
-  // Functions for creating nodes and edges
   const [editorMode, setEditorMode] = useState<EditorMode>(EditorMode.Edit);
-  const { unplacedId, unplacedCoord, handleClickAddNode } =
-    useAddNode(mousePos, editorMode, graph, setGraph, viewState);
-  const graphWithUnplaced = concatUnplaced(graph, unplacedId, unplacedCoord, editorMode);
+  const hoveredNodes = findHoveredIds(mousePos, viewState, graph, NODE_RADIUS_PX);
+  const { unplacedId, graphWithUnplaced, handleClickAddNode, resetPreviousAddition } =
+    useAddNode(mousePos, editorMode, graph, setGraph, viewState, hoveredNodes);
+  const hoveredNodesWithUnplaced = unplacedId ? [...hoveredNodes, unplacedId] : [...hoveredNodes]; // make the unplaced node always appear hovered
 
-  // Determine nodes under the mouse cursor
-  const hoveredNodes = findHoveredIds(mousePos, viewState, graphWithUnplaced, NODE_RADIUS_PX);
-  const hoveredNodesWithUnplaced = unplacedId ? [...hoveredNodes, unplacedId] : [...hoveredNodes];
-
-  const { selectedNodes, deselectAll, selectionHandleClick, selectionHandleKeyPress } = useSelected(hoveredNodes, setGraph);
-
+  const { selectedNodes, deselectAll, selectionHandleClick, selectionHandleKeyPress } = useSelected(hoveredNodes, setGraph, editorMode);
   const {
     isDragging,
     cancelDragging,
-    handleMouseUpControl,
-    handleMouseDownControl,
-    handleMouseMoveControl,
-  } = useDrag(graphWithUnplaced, setGraph, unplacedId, mousePos, viewState, hoveredNodes, selectedNodes, deselectAll, editorMode);
+    dragHandleMouseUp,
+    dragHandleMouseDown,
+    dragHandleMouseMove,
+  } = useDrag(graph, setGraph, mousePos, viewState, hoveredNodes, selectedNodes, deselectAll, editorMode);
 
   // Update graph when nodes or edges are changed
   const { setBoxProperties } = props;
@@ -86,23 +81,19 @@ function Edit(props: EditProps) {
       setMousePos(pixelCoord);
       panHandleMouseMove(pixelCoord);
     }
-    handleMouseMoveControl();
+    dragHandleMouseMove();
   }
   function handleMouseDown(e: React.MouseEvent) {
-    if (e.button === 0) { // Only do this for primary click
-      handleMouseDownControl(e);
-    }
+    dragHandleMouseDown(e);
     if (hoveredNodes.length === 0) {
       // Start panning if no nodes are hovered   
       panHandleMouseDown(e, controlHeld);
     }
+    handleClickAddNode();
   }
   function handleMouseUp(e: React.MouseEvent) {
-    // Only work for primary button
-    if (e.button === 0) {
-      // Finish and apply panning and dragging
-      handleMouseUpControl(e);
-    }
+    // Finish and apply panning and dragging
+    dragHandleMouseUp(e);
     panHandleMouseUp(e, controlHeld);
     selectionHandleClick(isDragging);
   }
@@ -124,10 +115,14 @@ function Edit(props: EditProps) {
     } else if (e.key === 'n' && e.type === 'keydown') {
       // Enter mode to add nodes
       if (editorMode === EditorMode.Edit) {
-        setEditorMode(EditorMode.Add)
+        setEditorMode(EditorMode.Add);
+        deselectAll();
       } else {
-        setEditorMode(EditorMode.Edit)
+        setEditorMode(EditorMode.Edit);
+        resetPreviousAddition();
       }
+    } else if (e.key === 'Escape' && e.type === 'keydown') {
+      resetPreviousAddition();
     }
   }
 
@@ -157,8 +152,8 @@ function Edit(props: EditProps) {
           }
           <GraphView
             zoomLevel={zoomLevel}
-            nodesWithDragOffset={graph.nodes}
-            edges={graph.edges}
+            nodes={graphWithUnplaced.nodes}
+            edges={graphWithUnplaced.edges}
             combinedPanOffset={combinedPanOffset}
             nodeRadiusPx={NODE_RADIUS_PX}
             selectedNodes={selectedNodes}

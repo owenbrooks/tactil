@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Graph } from "../../api/api";
+import { EditorMode } from "./Edit";
 
-export function useSelected(hoveredNodes: number[], setGraph: React.Dispatch<React.SetStateAction<Graph>>) {
+export function useSelected(hoveredNodes: number[], setGraph: React.Dispatch<React.SetStateAction<Graph>>, editorMode: EditorMode) {
     const [selectedNodes, setSelectedNodes] = useState<number[]>([]); // these numbers are keys to the nodes map
     const [shiftHeld, setShiftHeld] = useState(false);
 
     function selectionHandleKeyPress(e: React.KeyboardEvent) {
-        console.log(e.key)
         if (e.key === 'Shift') { // shift must be held for selection of more than one node
             setShiftHeld(e.type === 'keydown')
         } else if (e.key === 'Delete') {
@@ -19,7 +19,7 @@ export function useSelected(hoveredNodes: number[], setGraph: React.Dispatch<Rea
     }
 
     function selectionHandleClick(isDragging: boolean) {
-        if (!isDragging) {
+        if (!isDragging && editorMode !== EditorMode.Add) {
             setSelectedNodes(prevSelected => {
                 const isAlreadySelected = hoveredNodes.some(nodeId => {
                     return prevSelected.indexOf(nodeId) >= 0;

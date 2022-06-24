@@ -13,9 +13,8 @@ export function findHoveredIds(mousePos: Coordinate, viewState: ViewState, graph
 }
 
 export default function useDrag(
-    graphWithUnplaced: Graph,
+    graph: Graph,
     setGraph: React.Dispatch<React.SetStateAction<Graph>>,
-    unplacedId: number | null,
     mousePos: Coordinate,
     viewState: ViewState,
     hoveredNodes: number[],
@@ -43,7 +42,7 @@ export default function useDrag(
         setDragStartPosWorld(null);
     }
 
-    function handleMouseDownControl(e: React.MouseEvent) {
+    function dragHandleMouseDown(e: React.MouseEvent) {
         // Only do this for primary click
         if (e.button === 0) {
             // Start panning if no nodes are hovered   
@@ -58,7 +57,7 @@ export default function useDrag(
             }
         }
     }
-    function handleMouseUpControl(e: React.MouseEvent) {
+    function dragHandleMouseUp(e: React.MouseEvent) {
         // Only work for primary button
         if (e.button === 0) {
             stopDragging();
@@ -66,27 +65,27 @@ export default function useDrag(
             mergeDraggedWithHovered();
         }
     }
-    function handleMouseMoveControl() {
-        setGraph(prevGraph => {
-            let newNodes: Map<number, Coordinate> = new Map();
-            // let nodesWithDragOffsetWithUnplaced: Map<number, Coordinate> = new Map();
-            graphWithUnplaced.nodes.forEach((node, nodeId) => {
-                if (selectedNodes.indexOf(nodeId) >= 0 && liveDragOffsetWorld != null && nodeId !== unplacedId) {
-                    // Add drag offset to selected nodes
-                    newNodes.set(nodeId, {
-                        x: node.x + liveDragOffsetWorld.x,
-                        y: node.y + liveDragOffsetWorld.y,
-                    });
-                } else if (nodeId !== unplacedId) {
-                    newNodes.set(nodeId, node);
-                }
+    function dragHandleMouseMove() {
+        if (dragStartPosWorld !== null && liveDragOffsetWorld !== null && editorMode === EditorMode.Edit) {
+            setGraph(prevGraph => {
+                let newNodes: Map<number, Coordinate> = new Map();
+                // let nodesWithDragOffsetWithUnplaced: Map<number, Coordinate> = new Map();
+                graph.nodes.forEach((node, nodeId) => {
+                    if (selectedNodes.indexOf(nodeId) >= 0) {
+                        // Add drag offset to selected nodes
+                        newNodes.set(nodeId, {
+                            x: node.x + liveDragOffsetWorld.x,
+                            y: node.y + liveDragOffsetWorld.y,
+                        });
+                    } else {
+                        newNodes.set(nodeId, node);
+                    }
+                });
+                return {
+                    nodes: newNodes,
+                    edges: prevGraph.edges,
+                };
             });
-            return {
-                nodes: newNodes,
-                edges: prevGraph.edges,
-            };
-        });
-        if (dragStartPosWorld !== null) { // if are currently dragging
             setDragStartPosWorld(mousePosWorld);
         }
     }
@@ -138,8 +137,8 @@ export default function useDrag(
         isDragging,
         mergeDraggedWithHovered,
         cancelDragging: stopDragging,
-        handleMouseUpControl,
-        handleMouseDownControl,
-        handleMouseMoveControl,
+        dragHandleMouseUp,
+        dragHandleMouseDown,
+        dragHandleMouseMove,
     }
 }

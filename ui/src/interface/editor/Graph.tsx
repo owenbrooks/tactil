@@ -2,7 +2,7 @@ import { Coordinate, PIXEL_TO_WORLD_FACTOR } from '../../api/api';
 import { worldToPixel } from '../../geometry';
 
 type GraphViewProps = {
-    nodesWithDragOffset: Map<number, Coordinate>,
+    nodes: Map<number, Coordinate>,
     edges: Map<number, [number, number]>,
     selectedNodes: number[], // list of nodeId's
     hoveredNodes: number[], // list of nodeId's
@@ -12,11 +12,11 @@ type GraphViewProps = {
 };
 
 function GraphView(props: GraphViewProps) {
-    const { zoomLevel, nodesWithDragOffset, edges, combinedPanOffset, selectedNodes, hoveredNodes, nodeRadiusPx } = props;
+    const { zoomLevel, nodes, edges, combinedPanOffset, selectedNodes, hoveredNodes, nodeRadiusPx } = props;
 
     return <>
         {/* Nodes (circles)*/}
-        {[...nodesWithDragOffset.entries()].map(([nodeId, node]) => {
+        {[...nodes.entries()].map(([nodeId, node]) => {
             const pixelCoord = worldToPixel(node, combinedPanOffset, zoomLevel);
             const left = 'calc(' + pixelCoord.x + 'px + 50%)';
             const top = 'calc(' + pixelCoord.y + 'px + 50%';
@@ -27,10 +27,11 @@ function GraphView(props: GraphViewProps) {
         })}
         {/* Edges (lines)*/}
         {[...edges.entries()].map(([edgeId, edge]) => {
-            const nodeA = nodesWithDragOffset.get(edge[0]);
-            const nodeB = nodesWithDragOffset.get(edge[1]);
-
+            const nodeA = nodes.get(edge[0]);
+            const nodeB = nodes.get(edge[1]);
+            
             if (nodeA === undefined || nodeB === undefined) {
+                console.log(edgeId, edge[0], edge[1])
                 console.error("Mismatch between nodes and edges");
                 return null; // early exit
             }
