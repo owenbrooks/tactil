@@ -69,10 +69,12 @@ export default function useAddNode(
     }
     const graphWithUnplaced = { nodes: nodesWithUnplaced, edges: edgesWithUnplaced };
 
+    const extendingEdge = prevNodeId !== undefined; // indicates whether a node was just created/selected for extensions
+
     if (editorMode === EditorMode.Add) {
         const newNodeCoord = pixelToWorld(mousePos, viewState.panOffset, viewState.zoomLevel)
-        return { unplacedId, unplacedCoord: newNodeCoord, handleClickAddNode, graphWithUnplaced, resetPreviousAddition };
+        return { unplacedId, unplacedCoord: newNodeCoord, handleClickAddNode, graphWithUnplaced, resetPreviousAddition, extendingEdge };
     } else {
-        return { unplacedId: null, unplacedCoord: null, handleClickAddNode, graphWithUnplaced, resetPreviousAddition };
+        return { unplacedId: null, unplacedCoord: null, handleClickAddNode, graphWithUnplaced, resetPreviousAddition, extendingEdge };
     }
 }

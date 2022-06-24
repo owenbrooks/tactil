@@ -64,5 +64,5 @@ export function useSelected(hoveredNodes: number[], graph: Graph, setGraph: (new
         setGraph(newGraph);
     }
 
-    return { selectedNodes, deselectAll, selectionHandleKeyPress, selectionHandleClick };
+    return { selectedNodes, deselectAll, selectionHandleKeyPress, selectionHandleClick, deleteSelectedNodes };
 }

@@ -62,11 +62,11 @@ function Edit(props: EditProps) {
   };
   const [editorMode, setEditorMode] = useState<EditorMode>(EditorMode.Edit);
   const hoveredNodes = findHoveredIds(mousePos, viewState, graph, NODE_RADIUS_PX);
-  const { unplacedId, graphWithUnplaced, handleClickAddNode, resetPreviousAddition } =
+  const { unplacedId, graphWithUnplaced, handleClickAddNode, resetPreviousAddition, extendingEdge } =
     useAddNode(mousePos, editorMode, graph, setGraph, viewState, hoveredNodes);
   const hoveredNodesWithUnplaced = unplacedId ? [...hoveredNodes, unplacedId] : [...hoveredNodes]; // make the unplaced node always appear hovered
 
-  const { selectedNodes, deselectAll, selectionHandleClick, selectionHandleKeyPress } = useSelected(hoveredNodes, graph, setGraph, editorMode);
+  const { selectedNodes, deselectAll, selectionHandleClick, selectionHandleKeyPress, deleteSelectedNodes } = useSelected(hoveredNodes, graph, setGraph, editorMode);
   const {
     graphWithDragOffset,
     isDragging,
@@ -128,6 +128,15 @@ function Edit(props: EditProps) {
     handleKeyPress(e);
   });
 
+  function startAdding() {
+    setEditorMode(EditorMode.Add);
+    deselectAll();
+  }
+  function stopAdding() {
+    setEditorMode(EditorMode.Edit);
+    resetPreviousAddition();
+  }
+
   function handleKeyPress(e: React.KeyboardEvent) {
     selectionHandleKeyPress(e);
     if (e.key === 'Control') {
@@ -135,21 +144,30 @@ function Edit(props: EditProps) {
     } else if (e.key === 'n' && e.type === 'keydown') {
       // Enter mode to add nodes
       if (editorMode === EditorMode.Edit) {
-        setEditorMode(EditorMode.Add);
-        deselectAll();
+        startAdding();
       } else {
-        setEditorMode(EditorMode.Edit);
-        resetPreviousAddition();
+        stopAdding();
       }
     } else if (e.key === 'Escape' && e.type === 'keydown') {
       resetPreviousAddition();
+      // if haven't just added a node, leave adding mode
+      if (!extendingEdge) {
+        setEditorMode(EditorMode.Edit)
+      }
     } else if (e.key === 'z' && e.type === 'keydown' && e.ctrlKey) {
-      // undo
-      undoGraph();
+      handleUndo();
     } else if (e.key === 'y' && e.type === 'keydown' && e.ctrlKey) {
-      // redo
-      redoGraph();
+      handleRedo();
     }
+  }
+
+  function handleUndo() {
+    undoGraph();
+    resetPreviousAddition();
+  }
+  function handleRedo() {
+    redoGraph();
+    resetPreviousAddition();
   }
 
   return (
@@ -161,8 +179,13 @@ function Edit(props: EditProps) {
           <button onClick={() => { resetPanOffset(); }}>Reset pan</button>
         </div>
         <div>
-          <button onClick={undoGraph} disabled={!canUndo}>Undo</button>
-          <button onClick={redoGraph} disabled={!canRedo}>Redo</button>
+          <button onClick={handleUndo} disabled={!canUndo}>Undo</button>
+          <button onClick={handleRedo} disabled={!canRedo}>Redo</button>
+        </div>
+        <div>
+          <button onClick={startAdding} disabled={editorMode == EditorMode.Add}>Add new node/edge</button>
+          <button onClick={stopAdding} disabled={editorMode == EditorMode.Edit}>Stop adding</button>
+          <button onClick={deleteSelectedNodes} disabled={selectedNodes.length === 0}>Delete selected</button>
         </div>
         {/* <pre>{JSON.stringify(dragStartPosWorld, null, 2)}</pre>
         <pre>{JSON.stringify(liveDragOffsetWorld, null, 2)}</pre> */}
