@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { BoxProperties, Coordinate, boxParamsToGraph, graphToBoxParams, ImageInfo, Graph } from '../../api/api';
+import { BoxProperties, Coordinate, boxParamsToGraph, graphToBoxParams, ImageInfo } from '../../api/api';
 import ScaleBar from '../ScaleBar';
 import './Edit.css'
 import useZoom from './useZoom';
@@ -9,6 +9,8 @@ import PcdImage from './PcdImage';
 import useAddNode from './useAddNode';
 import useDrag, { findHoveredIds } from './useDrag';
 import { useSelected } from './useSelected';
+import useEventListener from './useEventListener';
+import useUndo from './useUndo';
 
 type EditProps = {
   boxProperties: BoxProperties | undefined,
@@ -31,7 +33,17 @@ const NODE_RADIUS_PX = 13 / 2; // used for mouse overlap detection and drawing
 function Edit(props: EditProps) {
 
   const initialGraph = boxParamsToGraph(props.boxProperties);
-  const [graph, setGraph] = useState<Graph>(initialGraph)
+  const [
+    graphState,
+    {
+      set: setGraph,
+      undo: undoGraph,
+      redo: redoGraph,
+      canUndo,
+      canRedo,
+    },
+  ] = useUndo(initialGraph);
+  const { present: graph } = graphState;
 
   // Keyboard state
   const [controlHeld, setControlHeld] = useState(false);
@@ -54,16 +66,18 @@ function Edit(props: EditProps) {
     useAddNode(mousePos, editorMode, graph, setGraph, viewState, hoveredNodes);
   const hoveredNodesWithUnplaced = unplacedId ? [...hoveredNodes, unplacedId] : [...hoveredNodes]; // make the unplaced node always appear hovered
 
-  const { selectedNodes, deselectAll, selectionHandleClick, selectionHandleKeyPress } = useSelected(hoveredNodes, setGraph, editorMode);
+  const { selectedNodes, deselectAll, selectionHandleClick, selectionHandleKeyPress } = useSelected(hoveredNodes, graph, setGraph, editorMode);
   const {
+    graphWithDragOffset,
     isDragging,
     cancelDragging,
     dragHandleMouseUp,
     dragHandleMouseDown,
-    dragHandleMouseMove,
   } = useDrag(graph, setGraph, mousePos, viewState, hoveredNodes, selectedNodes, deselectAll, editorMode);
 
-  // Update graph when nodes or edges are changed
+  const graphToDisplay = editorMode === EditorMode.Add ? graphWithUnplaced : graphWithDragOffset;
+
+  // Update parent's box properties when nodes or edges are changed
   const { setBoxProperties } = props;
   useEffect(() => {
     const newBoxProperties = graphToBoxParams(graph);
@@ -81,7 +95,6 @@ function Edit(props: EditProps) {
       setMousePos(pixelCoord);
       panHandleMouseMove(pixelCoord);
     }
-    dragHandleMouseMove();
   }
   function handleMouseDown(e: React.MouseEvent) {
     dragHandleMouseDown(e);
@@ -108,6 +121,13 @@ function Edit(props: EditProps) {
     startZoomListen();
   }
 
+  useEventListener('keydown', (e) => {
+    handleKeyPress(e);
+  });
+  useEventListener('keyup', (e) => {
+    handleKeyPress(e);
+  });
+
   function handleKeyPress(e: React.KeyboardEvent) {
     selectionHandleKeyPress(e);
     if (e.key === 'Control') {
@@ -123,6 +143,12 @@ function Edit(props: EditProps) {
       }
     } else if (e.key === 'Escape' && e.type === 'keydown') {
       resetPreviousAddition();
+    } else if (e.key === 'z' && e.type === 'keydown' && e.ctrlKey) {
+      // undo
+      undoGraph();
+    } else if (e.key === 'y' && e.type === 'keydown' && e.ctrlKey) {
+      // redo
+      redoGraph();
     }
   }
 
@@ -130,8 +156,14 @@ function Edit(props: EditProps) {
     <div className="edit-container">
       <div className='edit-params'>
         <p>Edit</p>
-        <button onClick={() => { resetZoomLevel(); }}>Reset zoom</button>
-        <button onClick={() => { resetPanOffset(); }}>Reset pan</button>
+        <div>
+          <button onClick={() => { resetZoomLevel(); }}>Reset zoom</button>
+          <button onClick={() => { resetPanOffset(); }}>Reset pan</button>
+        </div>
+        <div>
+          <button onClick={undoGraph} disabled={!canUndo}>Undo</button>
+          <button onClick={redoGraph} disabled={!canRedo}>Redo</button>
+        </div>
         {/* <pre>{JSON.stringify(dragStartPosWorld, null, 2)}</pre>
         <pre>{JSON.stringify(liveDragOffsetWorld, null, 2)}</pre> */}
 
@@ -143,8 +175,6 @@ function Edit(props: EditProps) {
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
         onMouseEnter={handleMouseEnter}
-        onKeyDown={handleKeyPress}
-        onKeyUp={handleKeyPress}
       >
         <>
           {props.pcdImageInfo &&
@@ -152,8 +182,8 @@ function Edit(props: EditProps) {
           }
           <GraphView
             zoomLevel={zoomLevel}
-            nodes={graphWithUnplaced.nodes}
-            edges={graphWithUnplaced.edges}
+            nodes={graphToDisplay.nodes}
+            edges={graphToDisplay.edges}
             combinedPanOffset={combinedPanOffset}
             nodeRadiusPx={NODE_RADIUS_PX}
             selectedNodes={selectedNodes}

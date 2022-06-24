@@ -1,8 +1,8 @@
 import React, { useState } from "react"
 import { Coordinate } from "../../api/api";
 
-export default function usePan(zoomLevel: number, mousePos: Coordinate): 
-[Coordinate, (e: React.MouseEvent, controlHeld: boolean) => void, (e: React.MouseEvent, controlHeld: boolean) => void, () => void, (mousePixelCoord: Coordinate) => void, () => void] {
+export default function usePan(zoomLevel: number, mousePos: Coordinate):
+    [Coordinate, (e: React.MouseEvent, controlHeld: boolean) => void, (e: React.MouseEvent, controlHeld: boolean) => void, () => void, (mousePixelCoord: Coordinate) => void, () => void] {
     const [savedPanOffset, setSavedPanOffset] = useState({ x: 0, y: 0 });
     const [livePanOffset, setLivePanOffset] = useState({ x: 0, y: 0 });
     const [isPanning, setIsPanning] = useState(false);
@@ -25,14 +25,16 @@ export default function usePan(zoomLevel: number, mousePos: Coordinate):
         }
     }
     function stopPanning() {
-        setIsPanning(false);
-        setSavedPanOffset({
-            x: livePanOffset.x + savedPanOffset.x,
-            y: livePanOffset.y + savedPanOffset.y,
-        });
-        setLivePanOffset({
-            x: 0, y: 0,
-        });
+        if (isPanning) {
+            setIsPanning(false);
+            setSavedPanOffset({
+                x: livePanOffset.x + savedPanOffset.x,
+                y: livePanOffset.y + savedPanOffset.y,
+            });
+            setLivePanOffset({
+                x: 0, y: 0,
+            });
+        }
     }
     function panHandleMouseMove(mousePixelCoord: Coordinate) {
         // the passed mousePixelCoord here will be more up to date than mousePos (haven't tested though)

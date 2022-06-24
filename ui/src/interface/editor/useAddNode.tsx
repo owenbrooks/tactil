@@ -8,7 +8,7 @@ export default function useAddNode(
     mousePos: Coordinate,
     editorMode: EditorMode,
     graph: Graph,
-    setGraph: React.Dispatch<React.SetStateAction<Graph>>,
+    setGraph: (newPresent: Graph, checkpoint?: boolean | undefined) => void,
     viewState: ViewState,
     hoveredNodes: number[],
 ) {
@@ -28,32 +28,29 @@ export default function useAddNode(
         // if no nodes were previously placed, and hovering one, set prev placed to the hovered one
         // if node was previously placed, and hovering one, create edge between the two and set prev placed to hovered one
         if (hoveredNodes.length === 0) {
-            setGraph(prevGraph => {
-                const newNodes = new Map(prevGraph.nodes);
-                newNodes.set(unplacedId, unplacedCoord);
-                console.log("Added node " + unplacedId);
 
-                const newEdges = new Map(prevGraph.edges);
-                if (prevNodeId !== undefined) {
-                    // add edge if previously placed
-                    const maxEdgeId = Math.max(0, Math.max(...graph.edges.keys()) + 1);
-                    newEdges.set(maxEdgeId, [unplacedId, prevNodeId]);
-                    console.log("Added edge " + [unplacedId, prevNodeId])
-                }
+            const newNodes = new Map(graph.nodes);
+            newNodes.set(unplacedId, unplacedCoord);
 
-                return { nodes: newNodes, edges: newEdges };
-            });
+            const newEdges = new Map(graph.edges);
+            if (prevNodeId !== undefined) {
+                // add edge if previously placed
+                const maxEdgeId = Math.max(0, Math.max(...graph.edges.keys()) + 1);
+                newEdges.set(maxEdgeId, [unplacedId, prevNodeId]);
+            }
+
+            const newGraph = { nodes: newNodes, edges: newEdges };
+            setGraph(newGraph);
             setPrevNodeId(unplacedId);
-        } else if (hoveredNodes.length == 1) {
+        } else if (hoveredNodes.length === 1) {
             const hovered = hoveredNodes[0]
             if (prevNodeId !== undefined) {
                 // add edge between prev and hovered
-                setGraph(prevGraph => {
-                    const newEdges = new Map(prevGraph.edges);
-                    const maxEdgeId = Math.max(0, Math.max(...graph.edges.keys()) + 1);
-                    newEdges.set(maxEdgeId, [hovered, prevNodeId]);
-                    return { nodes: prevGraph.nodes, edges: newEdges };
-                });
+                const newEdges = new Map(graph.edges);
+                const maxEdgeId = Math.max(0, Math.max(...graph.edges.keys()) + 1);
+                newEdges.set(maxEdgeId, [hovered, prevNodeId]);
+                const newGraph = { nodes: graph.nodes, edges: newEdges };
+                setGraph(newGraph);
             }
             setPrevNodeId(hovered);
         }

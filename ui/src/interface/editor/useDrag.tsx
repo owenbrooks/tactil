@@ -14,7 +14,7 @@ export function findHoveredIds(mousePos: Coordinate, viewState: ViewState, graph
 
 export default function useDrag(
     graph: Graph,
-    setGraph: React.Dispatch<React.SetStateAction<Graph>>,
+    setGraph: (newPresent: Graph, checkpoint?: boolean | undefined) => void,
     mousePos: Coordinate,
     viewState: ViewState,
     hoveredNodes: number[],
@@ -38,7 +38,30 @@ export default function useDrag(
         }
     })();
 
+    // add drag offset to relevant nodes
+    const nodesWithDragOffset = new Map(graph.nodes);
+    if (dragStartPosWorld !== null && liveDragOffsetWorld !== null && editorMode === EditorMode.Edit) {
+        selectedNodes.forEach((nodeId) => {
+            const node = graph.nodes.get(nodeId);
+            if (node === undefined) {
+                console.error("Graph and selected nodes mismatch.");
+            } else {
+                const newCoord = {
+                    x: node.x + liveDragOffsetWorld.x,
+                    y: node.y + liveDragOffsetWorld.y,
+                }
+                nodesWithDragOffset.set(nodeId, newCoord);
+            }
+        });
+    }
+    const graphWithDragOffset = { nodes: nodesWithDragOffset, edges: graph.edges };
+
+
     function stopDragging() {
+        const isDragging = dragStartPosWorld !== null;
+        if (isDragging) {
+            setGraph(graphWithDragOffset);
+        }
         setDragStartPosWorld(null);
     }
 
@@ -60,33 +83,11 @@ export default function useDrag(
     function dragHandleMouseUp(e: React.MouseEvent) {
         // Only work for primary button
         if (e.button === 0) {
-            stopDragging();
-            // Merge hovered nodes with dragged node
-            mergeDraggedWithHovered();
-        }
-    }
-    function dragHandleMouseMove() {
-        if (dragStartPosWorld !== null && liveDragOffsetWorld !== null && editorMode === EditorMode.Edit) {
-            setGraph(prevGraph => {
-                let newNodes: Map<number, Coordinate> = new Map();
-                // let nodesWithDragOffsetWithUnplaced: Map<number, Coordinate> = new Map();
-                graph.nodes.forEach((node, nodeId) => {
-                    if (selectedNodes.indexOf(nodeId) >= 0) {
-                        // Add drag offset to selected nodes
-                        newNodes.set(nodeId, {
-                            x: node.x + liveDragOffsetWorld.x,
-                            y: node.y + liveDragOffsetWorld.y,
-                        });
-                    } else {
-                        newNodes.set(nodeId, node);
-                    }
-                });
-                return {
-                    nodes: newNodes,
-                    edges: prevGraph.edges,
-                };
-            });
-            setDragStartPosWorld(mousePosWorld);
+            if (isDragging) {
+                stopDragging();
+                // Merge hovered nodes with dragged node
+                mergeDraggedWithHovered();
+            }
         }
     }
 
@@ -98,36 +99,33 @@ export default function useDrag(
                 const otherHoveredNodes = hoveredNodes.filter(id => id !== selectedNodes[0]);
                 if (otherHoveredNodes.length === 1 && selectedNodes[0] !== otherHoveredNodes[0]) {
                     const selectedId = selectedNodes[0]; // node being dragged (gets deleted)
-                    setGraph(prevGraph => {
-                        // copy old graph
-                        const newGraph = {
-                            nodes: new Map(prevGraph.nodes),
-                            edges: new Map(prevGraph.edges),
-                        };
-                        newGraph.nodes.delete(selectedId);
-                        // update edges
-                        const hoveredId = otherHoveredNodes[0]; // node being hovered (acquires new edges)
-                        prevGraph.edges.forEach((edge, edgeId) => {
-                            const selectedA = selectedId === edge[0];
-                            const selectedB = selectedId === edge[1];
+                    // copy old graph
+                    const newGraph = {
+                        nodes: new Map(graph.nodes),
+                        edges: new Map(graph.edges),
+                    };
+                    newGraph.nodes.delete(selectedId);
+                    // update edges
+                    const hoveredId = otherHoveredNodes[0]; // node being hovered (acquires new edges)
+                    graph.edges.forEach((edge, edgeId) => {
+                        const selectedA = selectedId === edge[0];
+                        const selectedB = selectedId === edge[1];
 
-                            const remainingEdgeId = selectedA ? edge[1] : edge[0];
-                            if (selectedA || selectedB) {
-                                if (remainingEdgeId === hoveredId) {
-                                    newGraph.edges.delete(edgeId) // edge is collapsed, delete it
-                                }
-                                else { // update edge with new id
-                                    if (selectedA) {
-                                        newGraph.edges.set(edgeId, [hoveredId, remainingEdgeId]);
-                                    } else if (selectedB) {
-                                        newGraph.edges.set(edgeId, [remainingEdgeId, hoveredId]);
-                                    }
+                        const remainingEdgeId = selectedA ? edge[1] : edge[0];
+                        if (selectedA || selectedB) {
+                            if (remainingEdgeId === hoveredId) {
+                                newGraph.edges.delete(edgeId) // edge is collapsed, delete it
+                            }
+                            else { // update edge with new id
+                                if (selectedA) {
+                                    newGraph.edges.set(edgeId, [hoveredId, remainingEdgeId]);
+                                } else if (selectedB) {
+                                    newGraph.edges.set(edgeId, [remainingEdgeId, hoveredId]);
                                 }
                             }
-                        });
-
-                        return newGraph;
-                    })
+                        }
+                    });
+                    setGraph(newGraph);
                 }
             }
         }
@@ -139,6 +137,6 @@ export default function useDrag(
         cancelDragging: stopDragging,
         dragHandleMouseUp,
         dragHandleMouseDown,
-        dragHandleMouseMove,
+        graphWithDragOffset,
     }
 }
