@@ -14,7 +14,7 @@ export default function usePan(zoomLevel: number, mousePos: Coordinate):
     };
 
     function panHandleMouseDown(e: React.MouseEvent, controlHeld: boolean) {
-        if (e.button === 1 || controlHeld && e.button === 0) {
+        if (e.button === 1 || (controlHeld && e.button === 0)) {
             setPanStartPos(mousePos);
             setIsPanning(true);
         }

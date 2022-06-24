@@ -185,8 +185,8 @@ function Edit(props: EditProps) {
           <button onClick={handleRedo} disabled={!canRedo}>Redo</button>
         </div>
         <div>
-          <button onClick={startAdding} disabled={editorMode == EditorMode.Add}>Add new node/edge</button>
-          <button onClick={stopAdding} disabled={editorMode == EditorMode.Edit}>Stop adding</button>
+          <button onClick={startAdding} disabled={editorMode === EditorMode.Add}>Add new node/edge</button>
+          <button onClick={stopAdding} disabled={editorMode === EditorMode.Edit}>Stop adding</button>
           <button onClick={deleteSelectedNodes} disabled={selectedNodes.length === 0}>Delete selected</button>
         </div>
         {/* <pre>{JSON.stringify(isDragging)}</pre> */}
