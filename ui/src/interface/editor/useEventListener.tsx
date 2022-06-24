@@ -1,5 +1,7 @@
 import React, { useEffect, useRef } from "react";
 
+// Code adapted from answer at https://stackoverflow.com/questions/29069639/listen-to-keypress-for-document-in-reactjs by Mate Paiva
+
 export default function useEventListener(eventName: string, handler: React.KeyboardEventHandler, element = window){
     // Create a ref that stores handler
     const savedHandler = useRef<React.KeyboardEventHandler>();
