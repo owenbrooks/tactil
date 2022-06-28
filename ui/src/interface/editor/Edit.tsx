@@ -4,13 +4,16 @@ import ScaleBar from '../ScaleBar';
 import './Edit.css'
 import useZoom from './useZoom';
 import usePan from './usePan';
-import GraphView from './Graph';
+import GraphView from './GraphView';
 import PcdImage from './PcdImage';
 import useAddNode from './useAddNode';
-import useDrag, { findHoveredIds } from './useDrag';
+import { useDragGraph, findHoveredIds } from './useDrag';
 import { useSelected } from './useSelected';
 import useEventListener from './useEventListener';
 import useUndo from './useUndo';
+import AddLabel from './AddLabel';
+import LabelView from './LabelView';
+import useLabels from './useLabels';
 
 type EditProps = {
   boxProperties: BoxProperties | undefined,
@@ -25,7 +28,7 @@ export type ViewState = {
 
 export enum EditorMode {
   Edit = 1,
-  Add = 2
+  AddNode = 2,
 }
 
 const NODE_RADIUS_PX = 13 / 2; // used for mouse overlap detection and drawing
@@ -66,16 +69,18 @@ function Edit(props: EditProps) {
     useAddNode(mousePos, editorMode, graph, setGraph, viewState, hoveredNodes);
   const hoveredNodesWithUnplaced = unplacedId ? [...hoveredNodes, unplacedId] : [...hoveredNodes]; // make the unplaced node always appear hovered
 
-  const { selectedNodes, deselectAll, selectionHandleClick, selectionHandleKeyPress, deleteSelectedNodes } = useSelected(hoveredNodes, graph, setGraph, editorMode);
+  const { selectedNodes, selectAllNodes, deselectAllNodes, selectionHandleClick, selectionHandleKeyPress, deleteSelectedNodes } = useSelected(hoveredNodes, graph, setGraph, editorMode);
   const {
     graphWithDragOffset,
     isDragging,
-    cancelDragging,
-    dragHandleMouseUp,
-    dragHandleMouseDown,
-  } = useDrag(graph, setGraph, mousePos, viewState, hoveredNodes, selectedNodes, deselectAll, editorMode);
+    cancelDraggingGraph: cancelDragging,
+    dragGraphHandleMouseUp,
+    dragGraphHandleMouseDown,
+  } = useDragGraph(graph, setGraph, mousePos, viewState, hoveredNodes, selectedNodes, deselectAllNodes, editorMode);
 
-  const graphToDisplay = editorMode === EditorMode.Add ? graphWithUnplaced : graphWithDragOffset;
+  const graphToDisplay = editorMode === EditorMode.AddNode ? graphWithUnplaced : graphWithDragOffset;
+
+  const { labelsWithDragOffset, selectedLabels, editingLabelIndex, selectAllLabels, deselectAllLabels, labelsHandleClick, handleLabelChange, stopEditingLabel, labelsHandleMouseUp } = useLabels(graph, setGraph, mousePos, viewState);
 
   // Update parent's box properties when nodes or edges are changed
   const { setBoxProperties } = props;
@@ -88,28 +93,39 @@ function Edit(props: EditProps) {
   function handleMouseMove(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
     const editFrameElem = document.getElementById('edit-frame');
     if (editFrameElem != null) {
+      // Calculate relative mouse coordinate in pixels. Center of frame is 0,0. Down-right is positive.
       const pixelCoord = {
-        x: e.nativeEvent.offsetX - editFrameElem.clientWidth / 2,
-        y: e.nativeEvent.offsetY - editFrameElem.clientHeight / 2,
+        x: e.pageX - editFrameElem?.offsetLeft - editFrameElem.clientWidth / 2,
+        y: e.pageY - editFrameElem?.offsetTop - editFrameElem.clientHeight / 2,
       }
       setMousePos(pixelCoord);
-      panHandleMouseMove(pixelCoord);
+
+      if (e.target === editFrameElem && editorMode === EditorMode.Edit) { // only apply if not clicking on a child element
+        panHandleMouseMove(pixelCoord);
+      }
     }
   }
   function handleMouseDown(e: React.MouseEvent) {
-    dragHandleMouseDown(e);
-    if (hoveredNodes.length === 0) {
-      // Start panning if no nodes are hovered   
-      panHandleMouseDown(e, controlHeld);
+    dragGraphHandleMouseDown(e);
+
+    const editFrameElem = document.getElementById('edit-frame');
+    if (e.target === editFrameElem) { // only true when not clicking a child element inside the frame
+      if (hoveredNodes.length === 0) {
+        // Start panning if no nodes are hovered
+        panHandleMouseDown(e, controlHeld);
+      }
+      deselectAllLabels();
     }
+
     handleClickAddNode();
     selectionHandleClick(isDragging);
   }
   function handleMouseUp(e: React.MouseEvent) {
     // Finish and apply panning and dragging
-    dragHandleMouseUp(e);
+    dragGraphHandleMouseUp(e);
     panHandleMouseUp(e, controlHeld);
     selectionHandleClick(isDragging);
+    labelsHandleMouseUp();
   }
 
   // When the mouse exits the editing box, stop panning/dragging and allow scrolling again
@@ -130,8 +146,8 @@ function Edit(props: EditProps) {
   });
 
   function startAdding() {
-    setEditorMode(EditorMode.Add);
-    deselectAll();
+    setEditorMode(EditorMode.AddNode);
+    deselectAllNodes();
   }
   function stopAdding() {
     setEditorMode(EditorMode.Edit);
@@ -155,11 +171,23 @@ function Edit(props: EditProps) {
       if (!extendingEdge) {
         setEditorMode(EditorMode.Edit)
       }
-      deselectAll();
+      deselectAllNodes();
+      stopEditingLabel();
     } else if (e.key === 'z' && e.type === 'keydown' && e.ctrlKey) {
       handleUndo();
     } else if (e.key === 'y' && e.type === 'keydown' && e.ctrlKey) {
       handleRedo();
+    } else if (e.key === 'Enter' && e.type === 'keydown') {
+      stopEditingLabel();
+    } else if (e.key === 'a' && e.ctrlKey && e.type === 'keydown') {
+      // select all elements only if the edit frame is currently focussed
+      // don't want to prevent normal behaviour otherwise
+      const editFrameElem = document.getElementById('edit-frame');
+      if (document.activeElement === editFrameElem) {
+        selectAllLabels();
+        selectAllNodes();
+        e.preventDefault();
+      }
     }
   }
 
@@ -185,13 +213,14 @@ function Edit(props: EditProps) {
           <button onClick={handleRedo} disabled={!canRedo}>Redo (Ctrl+Y)</button>
         </div>
         <div>
-          <button onClick={startAdding} disabled={editorMode === EditorMode.Add}>Add/extend wall (N)</button>
+          <button onClick={startAdding} disabled={editorMode === EditorMode.AddNode}>Add/extend wall (N)</button>
           <button onClick={stopAdding} disabled={editorMode === EditorMode.Edit}>Stop extending (N)</button>
         </div>
         <div>
-          <input></input><br/>
+          <AddLabel graph={graph} setGraph={setGraph} />
+          {/* <input></input><br/>
           <button>Add as text</button>
-          <button>Add as braille</button>
+          <button>Add as braille</button> */}
         </div>
         <div>
           <button onClick={deleteSelectedNodes} disabled={selectedNodes.length === 0}>Delete selected (Del)</button>
@@ -218,6 +247,15 @@ function Edit(props: EditProps) {
             nodeRadiusPx={NODE_RADIUS_PX}
             selectedNodes={selectedNodes}
             hoveredNodes={hoveredNodesWithUnplaced} // append unplaced node to highlight it
+          />
+          <LabelView
+            labels={labelsWithDragOffset}
+            viewState={viewState}
+            selectedLabels={selectedLabels}
+            editingLabelIndex={editingLabelIndex}
+            labelsHandleClick={labelsHandleClick}
+            handleLabelChange={handleLabelChange}
+            labelsHandleMouseUp={labelsHandleMouseUp}
           />
           <ScaleBar zoomLevel={zoomLevel} />
         </>

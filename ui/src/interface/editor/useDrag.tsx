@@ -12,20 +12,9 @@ export function findHoveredIds(mousePos: Coordinate, viewState: ViewState, graph
     return ids;
 }
 
-export default function useDrag(
-    graph: Graph,
-    setGraph: (newPresent: Graph, checkpoint?: boolean | undefined) => void,
-    mousePos: Coordinate,
-    viewState: ViewState,
-    hoveredNodes: number[],
-    selectedNodes: number[],
-    deselectAll: () => void,
-    editorMode: EditorMode,
-) {
+export function useDrag(mousePos: Coordinate, viewState: ViewState) {
     const [dragStartPosWorld, setDragStartPosWorld] = useState<Coordinate | null>(null);
-
     const mousePosWorld = pixelToWorld(mousePos, viewState.panOffset, viewState.zoomLevel);
-
     const liveDragOffsetWorld = (() => {
         if (dragStartPosWorld !== null) {
             return {
@@ -38,9 +27,32 @@ export default function useDrag(
     })();
     const isDragging = liveDragOffsetWorld !== null && liveDragOffsetWorld.x !== 0 && liveDragOffsetWorld.y !== 0;
 
+    function startDragging() {
+        setDragStartPosWorld(mousePosWorld); // start dragging
+    }
+
+    function stopDragging() {
+        setDragStartPosWorld(null);
+    }
+
+    return { liveDragOffsetWorld, isDragging, startDragging, stopDragging };
+}
+
+export function useDragGraph(
+    graph: Graph,
+    setGraph: (newPresent: Graph, checkpoint?: boolean | undefined) => void,
+    mousePos: Coordinate,
+    viewState: ViewState,
+    hoveredNodes: number[],
+    selectedNodes: number[],
+    deselectAll: () => void,
+    editorMode: EditorMode,
+) {
+    const { liveDragOffsetWorld, isDragging, startDragging, stopDragging } = useDrag(mousePos, viewState);
+
     // add drag offset to relevant nodes
     const nodesWithDragOffset = new Map(graph.nodes);
-    if (dragStartPosWorld !== null && liveDragOffsetWorld !== null && editorMode === EditorMode.Edit) {
+    if (liveDragOffsetWorld !== null && editorMode === EditorMode.Edit) {
         selectedNodes.forEach((nodeId) => {
             const node = graph.nodes.get(nodeId);
             if (node === undefined) {
@@ -54,18 +66,18 @@ export default function useDrag(
             }
         });
     }
-    const graphWithDragOffset = { nodes: nodesWithDragOffset, edges: graph.edges };
+    const graphWithDragOffset = { nodes: nodesWithDragOffset, edges: graph.edges, labels: [...graph.labels] };
 
 
-    function stopDragging() {
+    function stopDraggingGraph() {
         if (isDragging) {
             const afterHoveredDraggedMerge = mergeDraggedWithHovered(graphWithDragOffset, hoveredNodes, selectedNodes);
             setGraph(afterHoveredDraggedMerge);
         }
-        setDragStartPosWorld(null);
+        stopDragging();
     }
 
-    function dragHandleMouseDown(e: React.MouseEvent) {
+    function dragGraphHandleMouseDown(e: React.MouseEvent) {
         // Only do this for primary click
         if (e.button === 0) {
             // Start panning if no nodes are hovered   
@@ -73,22 +85,22 @@ export default function useDrag(
                 // reset selected nodes
                 deselectAll();
             } else {
-                setDragStartPosWorld(mousePosWorld); // start dragging
+                startDragging();
             }
         }
     }
-    function dragHandleMouseUp(e: React.MouseEvent) {
+    function dragGraphHandleMouseUp(e: React.MouseEvent) {
         // Only work for primary button
         if (e.button === 0) {
-            stopDragging();
+            stopDraggingGraph();
         }
     }
 
     return {
         isDragging,
-        cancelDragging: stopDragging,
-        dragHandleMouseUp,
-        dragHandleMouseDown,
+        cancelDraggingGraph: stopDraggingGraph,
+        dragGraphHandleMouseUp,
+        dragGraphHandleMouseDown,
         graphWithDragOffset,
     }
 }
@@ -100,6 +112,7 @@ function mergeDraggedWithHovered(graphWithDragOffset: Graph, hoveredNodes: numbe
     const newGraph = {
         nodes: new Map(graphWithDragOffset.nodes),
         edges: new Map(graphWithDragOffset.edges),
+        labels: [...graphWithDragOffset.labels],
     };
     if (selectedNodes.length === 1) {
         const otherHoveredNodes = hoveredNodes.filter(id => id !== selectedNodes[0]);

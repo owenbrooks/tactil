@@ -31,13 +31,14 @@
   background-color: black;
   border-radius: 50%;
   display: inline-block;
-  pointer-events: none;
+  /* pointer-events: none; */
   transform: translate(-50%, -50%);
 }
 
 .node:hover {
   background-color: #018381;
   z-index: 10;
+  cursor: pointer;
 }
 .node:focus {
   background-color: #018381;
@@ -58,8 +59,26 @@
   z-index: 10;
 }
 
-.selected {
+.node.selected {
   background-color: #018381;
   border: 2px solid #018381;
   z-index: 10;
+}
+
+.label {
+  white-space:nowrap; /* prevent text wrapping */
+}
+
+.label:hover {
+  color: #018381;
+  cursor: pointer;
+}
+
+.label {
+  padding: 3px;
+}
+
+.label.selected {
+  color: #018381;
+  outline: 2px solid #018381;
 }

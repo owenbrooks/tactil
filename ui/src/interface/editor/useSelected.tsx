@@ -14,13 +14,17 @@ export function useSelected(hoveredNodes: number[], graph: Graph, setGraph: (new
         }
     }
 
-    function deselectAll() {
+    function deselectAllNodes() {
         setSelectedNodes([]);
+    }
+
+    function selectAllNodes() {
+        setSelectedNodes([...graph.nodes.keys()])
     }
 
     // select nodes on mousedown
     function selectionHandleClick(isDragging: boolean) {
-        if (!isDragging && editorMode !== EditorMode.Add) {
+        if (!isDragging && editorMode !== EditorMode.AddNode) {
             setSelectedNodes(prevSelected => {
                 const isAlreadySelected = hoveredNodes.some(nodeId => {
                     return prevSelected.indexOf(nodeId) >= 0;
@@ -44,6 +48,7 @@ export function useSelected(hoveredNodes: number[], graph: Graph, setGraph: (new
         const newGraph = {
             nodes: new Map(graph.nodes),
             edges: new Map(graph.edges),
+            labels: [...graph.labels],
         };
         // Deselect hovered nodes if any were previously selected and shift is held down
         selectedNodes.forEach(nodeId => {
@@ -58,5 +63,5 @@ export function useSelected(hoveredNodes: number[], graph: Graph, setGraph: (new
         setGraph(newGraph);
     }
 
-    return { selectedNodes, deselectAll, selectionHandleKeyPress, selectionHandleClick, deleteSelectedNodes };
+    return { selectedNodes, selectAllNodes, deselectAllNodes, selectionHandleKeyPress, selectionHandleClick, deleteSelectedNodes };
 }

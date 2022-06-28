@@ -21,7 +21,7 @@ export default function useAddNode(
     }
 
     function handleClickAddNode() {
-        if (editorMode !== EditorMode.Add) {
+        if (editorMode !== EditorMode.AddNode) {
             return;
         }
         // if not hovering any, add current pos to nodes set and set prev placed to this new one
@@ -39,7 +39,7 @@ export default function useAddNode(
                 newEdges.set(maxEdgeId, [unplacedId, prevNodeId]);
             }
 
-            const newGraph = { nodes: newNodes, edges: newEdges };
+            const newGraph = { nodes: newNodes, edges: newEdges, labels: [...graph.labels] };
             setGraph(newGraph);
             setPrevNodeId(unplacedId);
         } else if (hoveredNodes.length === 1) {
@@ -49,7 +49,7 @@ export default function useAddNode(
                 const newEdges = new Map(graph.edges);
                 const maxEdgeId = Math.max(0, Math.max(...graph.edges.keys()) + 1);
                 newEdges.set(maxEdgeId, [hovered, prevNodeId]);
-                const newGraph = { nodes: graph.nodes, edges: newEdges };
+                const newGraph = { nodes: graph.nodes, edges: newEdges, labels: [...graph.labels] };
                 setGraph(newGraph);
             }
             setPrevNodeId(hovered);
@@ -58,20 +58,20 @@ export default function useAddNode(
 
     // Add unplaced node and edge to graph if necessary
     const nodesWithUnplaced = new Map(graph.nodes);
-    if (unplacedId !== null && unplacedCoord !== null && editorMode === EditorMode.Add) {
+    if (unplacedId !== null && unplacedCoord !== null && editorMode === EditorMode.AddNode) {
         nodesWithUnplaced.set(unplacedId, unplacedCoord);
     }
     // add edge between unplaced and prev placed if exists
     const edgesWithUnplaced = new Map(graph.edges);
-    if (prevNodeId !== undefined && editorMode === EditorMode.Add) {
+    if (prevNodeId !== undefined && editorMode === EditorMode.AddNode) {
         const maxEdgeId = Math.max(...graph.edges.keys()) + 1;
         edgesWithUnplaced.set(maxEdgeId, [unplacedId, prevNodeId]);
     }
-    const graphWithUnplaced = { nodes: nodesWithUnplaced, edges: edgesWithUnplaced };
+    const graphWithUnplaced = { nodes: nodesWithUnplaced, edges: edgesWithUnplaced, labels: [...graph.labels] };
 
     const extendingEdge = prevNodeId !== undefined; // indicates whether a node was just created/selected for extensions
 
-    if (editorMode === EditorMode.Add) {
+    if (editorMode === EditorMode.AddNode) {
         const newNodeCoord = pixelToWorld(mousePos, viewState.panOffset, viewState.zoomLevel)
         return { unplacedId, unplacedCoord: newNodeCoord, handleClickAddNode, graphWithUnplaced, resetPreviousAddition, extendingEdge };
     } else {

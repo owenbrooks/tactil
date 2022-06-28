@@ -29,7 +29,7 @@ function GraphView(props: GraphViewProps) {
         {[...edges.entries()].map(([edgeId, edge]) => {
             const nodeA = nodes.get(edge[0]);
             const nodeB = nodes.get(edge[1]);
-            
+
             if (nodeA === undefined || nodeB === undefined) {
                 console.log(edgeId, edge[0], edge[1])
                 console.error("Mismatch between nodes and edges");
@@ -60,6 +60,7 @@ function GraphView(props: GraphViewProps) {
                 transform: "translate(-50%, -50%) rotate(" + angle + "deg) ",
             }}> </div>
         })}
+        
     </>
 }
 

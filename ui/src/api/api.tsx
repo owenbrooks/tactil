@@ -52,6 +52,12 @@ export type Coordinate = {
 export type Graph = {
     nodes: Map<number, Coordinate>,
     edges: Map<number, [number, number]>,
+    labels: Label[],
+};
+
+export type Label = {
+    text: string,
+    coord: Coordinate,
 };
 
 export const PIXEL_TO_WORLD_FACTOR = 0.1;
@@ -60,7 +66,8 @@ export function boxParamsToGraph(boxProperties: BoxProperties | undefined): Grap
     if (boxProperties === undefined) {
         return {
             nodes: new Map(),
-            edges: new Map()
+            edges: new Map(),
+            labels: [],
         }
     }
 
@@ -120,6 +127,7 @@ export function boxParamsToGraph(boxProperties: BoxProperties | undefined): Grap
     return {
         nodes: nodes,
         edges: edges,
+        labels: [],
     }
 }
 
