@@ -181,13 +181,20 @@ function Edit(props: EditProps) {
           <button onClick={() => { resetPanOffset(); }}>Reset pan</button>
         </div>
         <div>
-          <button onClick={handleUndo} disabled={!canUndo}>Undo</button>
-          <button onClick={handleRedo} disabled={!canRedo}>Redo</button>
+          <button onClick={handleUndo} disabled={!canUndo}>Undo (Ctrl+Z)</button>
+          <button onClick={handleRedo} disabled={!canRedo}>Redo (Ctrl+Y)</button>
         </div>
         <div>
-          <button onClick={startAdding} disabled={editorMode === EditorMode.Add}>Add new node/edge</button>
-          <button onClick={stopAdding} disabled={editorMode === EditorMode.Edit}>Stop adding</button>
-          <button onClick={deleteSelectedNodes} disabled={selectedNodes.length === 0}>Delete selected</button>
+          <button onClick={startAdding} disabled={editorMode === EditorMode.Add}>Add/extend wall (N)</button>
+          <button onClick={stopAdding} disabled={editorMode === EditorMode.Edit}>Stop extending (N)</button>
+        </div>
+        <div>
+          <input></input><br/>
+          <button>Add as text</button>
+          <button>Add as braille</button>
+        </div>
+        <div>
+          <button onClick={deleteSelectedNodes} disabled={selectedNodes.length === 0}>Delete selected (Del)</button>
         </div>
         {/* <pre>{JSON.stringify(isDragging)}</pre> */}
       </div>

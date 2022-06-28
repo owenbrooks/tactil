@@ -23,7 +23,7 @@ function GraphView(props: GraphViewProps) {
             const isHovered = hoveredNodes.indexOf(nodeId) >= 0;
             const isSelected = selectedNodes.indexOf(nodeId) >= 0;
             const className = 'node' + (isHovered ? ' hovered' : '') + (isSelected ? ' selected' : '');
-            return <div className={className} style={{ left: left, top: top, position: 'absolute', height: nodeRadiusPx * 2, width: nodeRadiusPx * 2 }} key={nodeId} ></div>
+            return <div className={className} tabIndex={0} style={{ left: left, top: top, position: 'absolute', height: nodeRadiusPx * 2, width: nodeRadiusPx * 2 }} key={nodeId} ></div>
         })}
         {/* Edges (lines)*/}
         {[...edges.entries()].map(([edgeId, edge]) => {

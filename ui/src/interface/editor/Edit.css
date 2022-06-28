@@ -36,7 +36,13 @@
 }
 
 .node:hover {
-  background-color: #019592;
+  background-color: #018381;
+  z-index: 10;
+}
+.node:focus {
+  background-color: #018381;
+  border: 2px solid #018381;
+  outline: none;
   z-index: 10;
 }
 
@@ -44,15 +50,16 @@
   pointer-events: none;
 }
 .edge:hover {
-  background-color: #019592;
+  background-color: #018381;
 }
 
 .hovered {
-  background-color: #019592;
+  background-color: #018381;
   z-index: 10;
 }
 
 .selected {
-  background-color: #019592;
+  background-color: #018381;
+  border: 2px solid #018381;
   z-index: 10;
 }
