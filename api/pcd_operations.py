@@ -58,21 +58,19 @@ def remove_small_clusters(pcd, labels, min_point_count):
 
 # Perform plane segmentation and get bounding boxes for vertical planes
 def segment_planes(
-    pcd,
-    distance_threshold,
-    num_iterations,
-    verticality_epsilon,
-    min_plane_size,
-    z_index,
+    pcd: o3d.geometry.PointCloud,
+    distance_threshold: float,
+    num_iterations: int,
+    verticality_epsilon: float,
+    min_plane_size: int,
+    z_index: int, # 0, 1, or 2
 ):
     segment_models = []
     segments = []
     rest = pcd
     max_plane_idx = 15
-    # rest.paint_uniform_color([0.8, 0.8, 0.8])
 
     for i in range(max_plane_idx):
-        colours = plt.get_cmap("tab20")(i)
         try:
             if len(np.asarray(rest.points)) < min_plane_size:
                 break
@@ -94,8 +92,6 @@ def segment_planes(
                 rest = rest.select_by_index(inliers, invert=True)
         except Exception as e:
             print(e)
-
-        # print("pass",i+1,"/",max_plane_idx,"done.")
 
     return segments, segment_models, rest
 

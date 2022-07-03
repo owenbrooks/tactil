@@ -1,7 +1,6 @@
 import numpy as np
 import open3d as o3d
 import sys
-import plotly.graph_objects as go
 import time
 from sklearn.cluster import MeanShift, estimate_bandwidth
 import matplotlib.pyplot as plt
@@ -19,26 +18,48 @@ from image_operations import ImageInfo, save_image
 from scipy import stats
 from scipy.spatial.transform import Rotation as R
 import math
+from typing import Tuple
 
 
 def process(
     pcd_path: typing.Union[str, bytes, os.PathLike],
     image_dir: typing.Union[str, bytes, os.PathLike],
-    z_index=2,
+    z_index: int=2,
     visualise=False,
-) -> ImageInfo:
+) -> Tuple[int, ImageInfo]:
     # o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Error)
+    pcd = read_cloud(pcd_path, z_index)
+    pcd = vertical_threshold(pcd, threshold_height=2.2) # Remove roof
+    downsampled_for_display = create_display_pcd(pcd, visualise)
+    pcd = remove_nonwall_points(pcd, visualise)
+    unit_normals, labels = cluster_by_normal(pcd)
+    rotation_matrix = find_rot_to_primary_normal(unit_normals, labels)
+    pcd.rotate(rotation_matrix, center=(0, 0, 0))
+    print("Rotated to primary normal direction")
+    large_normal_clusters = partition_by_normal_and_density(pcd, labels, visualise)
+    centers, extents, rotations = fit_models(large_normal_clusters, visualise)
+
+    # Take picture of rotated pcd for editor
+    downsampled_for_display.rotate(rotation_matrix, center=(0, 0, 0))
+    image_info = save_image(downsampled_for_display, image_dir)
+
+    outputs = {
+        "box_centers": centers,
+        "box_extents": extents,
+        "box_rotations": rotations,
+    }
+
+    print("Initial processing complete.")
+    return outputs, image_info
+
+
+def read_cloud(pcd_path: typing.Union[str, bytes, os.PathLike], z_index: int=2):
     # Load pcd
     load_tic = time.perf_counter()
     print("Loading pcd")
     pcd = o3d.io.read_point_cloud(pcd_path)
     load_toc = time.perf_counter()
     print(f"Loaded pcd {pcd_path} in {load_toc-load_tic: 0.4f} seconds")
-
-    # Create coordinate frame for visualisation
-    origin_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
-        size=0.6, origin=[0, 0, 0]
-    )
 
     # Switch vertical axis if specified
     if z_index != 2:
@@ -49,16 +70,23 @@ def process(
         pcd.points = o3d.cpu.pybind.utility.Vector3dVector(pcd_points)
         pcd.normals = o3d.cpu.pybind.utility.Vector3dVector(pcd_normals)
 
-    # Remove roof
-    max_height = 2.2
-    pcd = vertical_threshold(pcd, threshold_height=max_height)
+    return pcd
 
+
+def create_display_pcd(pcd, visualise: bool):
     # Display downsampled pcd with roof removed
     downsampled_for_display = pcd.voxel_down_sample(voxel_size=0.1)
-
+    # Create coordinate frame for visualisation
+    origin_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
+        size=0.6, origin=[0, 0, 0]
+    )
     if visualise:
         o3d.visualization.draw_geometries([downsampled_for_display, origin_frame])
 
+    return downsampled_for_display
+
+
+def remove_nonwall_points(pcd, visualise: bool):
     # Downsample pcd
     pcd = pcd.voxel_down_sample(voxel_size=0.1)
     print(f"Downsampled pcd. New length: {np.asarray(pcd.points).shape[0]}")
@@ -88,7 +116,11 @@ def process(
     print(f"Removed clusters smaller than {min_cluster_size} points")
     if visualise:
         o3d.visualization.draw_geometries([pcd])
+    
+    return pcd
 
+
+def cluster_by_normal(pcd):
     # Compute unit normal vectors
     normals = np.asarray(pcd.normals)
     step = 1
@@ -107,11 +139,14 @@ def process(
     ms.fit(unit_normals)
     ms_toc = time.perf_counter()
     labels = ms.labels_
-    labels_unique = np.unique(labels)
     print(
-        f"Meanshift normal clustering: found {len(labels_unique)} clusters in {ms_toc-ms_tic: 0.4f} seconds"
+        f"Meanshift normal clustering: found clusters in {ms_toc-ms_tic: 0.4f} seconds"
     )
 
+    return unit_normals, labels
+
+
+def find_rot_to_primary_normal(unit_normals, labels):
     # Rotate pcd to align with primary direction
     most_common_label = stats.mode(labels).mode
     biggest_normal_cluster = unit_normals[labels == most_common_label]
@@ -120,24 +155,16 @@ def process(
         math.atan2(primary_normal_direction[1], primary_normal_direction[0]) - np.pi / 2
     )
     rotation_matrix = R.from_euler("xyz", [0, 0, -z_angle]).as_matrix()
-    pcd.rotate(rotation_matrix, center=(0, 0, 0))
-    print("Rotated to primary normal direction")
 
-    # Visualise primary cluster
-    if visualise:
-        primary_cluster_indices = np.arange(len(np.asarray(pcd.points)))[
-            labels == most_common_label
-        ]
-        primary_cluster = pcd.select_by_index(primary_cluster_indices)
-        primary_cluster.paint_uniform_color([1, 0.706, 0])
-        o3d.visualization.draw_geometries([pcd, primary_cluster])
+    return rotation_matrix
 
-    # Take picture of rotated pcd
-    downsampled_for_display.rotate(rotation_matrix, center=(0, 0, 0))
-    image_info = save_image(downsampled_for_display, image_dir)
 
+def partition_by_normal_and_density(pcd, labels, visualise: bool) -> list:
+    """ Divides the pcd into a list of sub-clouds according to the normal direction clustering,
+    and by then using dbscan """
     # Separate pcd based on normal direction
     normal_clusters = []
+    labels_unique = np.unique(labels)
     for i in range(len(labels_unique)):
         current_cluster_mask = labels == i
         point_count = len(np.asarray(pcd.points))
@@ -147,11 +174,6 @@ def process(
         cluster = pcd.select_by_index(current_cluster_indices)
         normal_clusters.append(cluster)
 
-    # Paint point cloud according to cluster
-    def paint_pcd_list(pcd_list):
-        for i in range(len(pcd_list)):
-            colour = plt.get_cmap("tab20")(i)
-            pcd_list[i].paint_uniform_color(list(colour[:3]))
 
     if visualise:
         o3d.visualization.draw_geometries(normal_clusters)
@@ -164,10 +186,20 @@ def process(
         # remove last label which are "noise" points
         large_normal_clusters += separated_clusters[:-1]  
 
+    # Paint point cloud according to cluster
+    def paint_pcd_list(pcd_list):
+        for i in range(len(pcd_list)):
+            colour = plt.get_cmap("tab20")(i)
+            pcd_list[i].paint_uniform_color(list(colour[:3]))
+
     paint_pcd_list(normal_clusters)
     if visualise:
         o3d.visualization.draw_geometries(large_normal_clusters)
 
+    return large_normal_clusters
+
+
+def fit_models(large_normal_clusters, visualise: bool):
     # segment planes
     planes = []
     plane_models = []
@@ -182,10 +214,6 @@ def process(
             z_index=2,
         )
 
-        # generate bounding boxes
-        # line_sets = get_bounding_boxes(segments, segment_models)
-        # o3d.visualization.draw_geometries(segments + line_sets + [rest])
-
         planes += segments
         plane_models += segment_models
         remaining_points.append(rest)
@@ -194,7 +222,7 @@ def process(
     # o3d.visualization.draw_geometries(line_sets + planes)
     # o3d.visualization.draw_geometries(normal_clusters + line_sets + planes + remaining_points)
 
-    # Flatten into 2D and downsample again
+    # Flatten into 2D
     def flatten(pcd):
         points = np.asarray(pcd.points)
         points[:, 2] = 0.0  # flatten in z direction
@@ -204,11 +232,15 @@ def process(
         flatten(cloud)
 
     line_sets, boxes = get_bounding_boxes(planes)
+
+    # Create coordinate frame for visualisation
+    origin_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
+        size=0.6, origin=[0, 0, 0]
+    )
     if visualise:
         o3d.visualization.draw_geometries(planes + line_sets + [origin_frame])
-        # o3d.visualization.draw_geometries([planes[0], line_sets[0], origin_frame])
 
-    # display frame markers for each box
+    # Display frame markers for each box
     frame_markers = []
     for box in boxes:
         center = box.get_center()
@@ -229,14 +261,8 @@ def process(
     centers = [box.get_center().tolist() for box in boxes]
     extents = [box.extent.tolist() for box in boxes]
     rotations = [box.R.tolist() for box in boxes]
-    outputs = {
-        "box_centers": centers,
-        "box_extents": extents,
-        "box_rotations": rotations,
-    }
 
-    print("Initial processing complete.")
-    return outputs, image_info
+    return centers, extents, rotations
 
 
 if __name__ == "__main__":
