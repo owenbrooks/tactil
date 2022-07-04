@@ -6,6 +6,7 @@ from sklearn.cluster import MeanShift, estimate_bandwidth
 import matplotlib.pyplot as plt
 import typing
 import os
+from api.typings.o3d_geometry import PointCloud
 from pcd_operations import (
     dbscan_cluster,
     remove_small_clusters,
@@ -24,12 +25,12 @@ from typing import Tuple
 def process(
     pcd_path: typing.Union[str, bytes, os.PathLike],
     image_dir: typing.Union[str, bytes, os.PathLike],
-    z_index: int=2,
+    z_index: int = 2,
     visualise=False,
 ) -> Tuple[int, ImageInfo]:
     # o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Error)
     pcd = read_cloud(pcd_path, z_index)
-    pcd = vertical_threshold(pcd, threshold_height=2.2) # Remove roof
+    pcd = vertical_threshold(pcd, threshold_height=2.2)  # Remove roof
     downsampled_for_display = create_display_pcd(pcd, visualise)
     pcd = remove_nonwall_points(pcd, visualise)
     unit_normals, labels = cluster_by_normal(pcd)
@@ -53,7 +54,9 @@ def process(
     return outputs, image_info
 
 
-def read_cloud(pcd_path: typing.Union[str, bytes, os.PathLike], z_index: int=2):
+def read_cloud(
+    pcd_path: typing.Union[str, bytes, os.PathLike], z_index: int = 2
+) -> PointCloud:
     # Load pcd
     load_tic = time.perf_counter()
     print("Loading pcd")
@@ -73,7 +76,7 @@ def read_cloud(pcd_path: typing.Union[str, bytes, os.PathLike], z_index: int=2):
     return pcd
 
 
-def create_display_pcd(pcd, visualise: bool):
+def create_display_pcd(pcd: PointCloud, visualise: bool) -> PointCloud:
     # Display downsampled pcd with roof removed
     downsampled_for_display = pcd.voxel_down_sample(voxel_size=0.1)
     # Create coordinate frame for visualisation
@@ -86,7 +89,7 @@ def create_display_pcd(pcd, visualise: bool):
     return downsampled_for_display
 
 
-def remove_nonwall_points(pcd, visualise: bool):
+def remove_nonwall_points(pcd: PointCloud, visualise: bool) -> PointCloud:
     # Downsample pcd
     pcd = pcd.voxel_down_sample(voxel_size=0.1)
     print(f"Downsampled pcd. New length: {np.asarray(pcd.points).shape[0]}")
@@ -116,11 +119,11 @@ def remove_nonwall_points(pcd, visualise: bool):
     print(f"Removed clusters smaller than {min_cluster_size} points")
     if visualise:
         o3d.visualization.draw_geometries([pcd])
-    
+
     return pcd
 
 
-def cluster_by_normal(pcd):
+def cluster_by_normal(pcd: PointCloud) -> Tuple[np.ndarray, np.ndarray]:
     # Compute unit normal vectors
     normals = np.asarray(pcd.normals)
     step = 1
@@ -146,7 +149,7 @@ def cluster_by_normal(pcd):
     return unit_normals, labels
 
 
-def find_rot_to_primary_normal(unit_normals, labels):
+def find_rot_to_primary_normal(unit_normals: np.ndarray, labels: np.ndarray):
     # Rotate pcd to align with primary direction
     most_common_label = stats.mode(labels).mode
     biggest_normal_cluster = unit_normals[labels == most_common_label]
@@ -159,21 +162,18 @@ def find_rot_to_primary_normal(unit_normals, labels):
     return rotation_matrix
 
 
-def partition_by_normal_and_density(pcd, labels, visualise: bool) -> list:
-    """ Divides the pcd into a list of sub-clouds according to the normal direction clustering,
-    and by then using dbscan """
+def partition_by_normal_and_density(pcd: PointCloud, labels, visualise: bool) -> list[PointCloud]:
+    """Divides the pcd into a list of sub-clouds according to the normal direction clustering,
+    and by then using dbscan"""
     # Separate pcd based on normal direction
     normal_clusters = []
     labels_unique = np.unique(labels)
     for i in range(len(labels_unique)):
         current_cluster_mask = labels == i
         point_count = len(np.asarray(pcd.points))
-        current_cluster_indices = np.arange(point_count)[
-            current_cluster_mask
-        ]
+        current_cluster_indices = np.arange(point_count)[current_cluster_mask]
         cluster = pcd.select_by_index(current_cluster_indices)
         normal_clusters.append(cluster)
-
 
     if visualise:
         o3d.visualization.draw_geometries(normal_clusters)
@@ -184,7 +184,7 @@ def partition_by_normal_and_density(pcd, labels, visualise: bool) -> list:
         labels = dbscan_cluster(norm_clust, epsilon=0.2, min_points=10)
         separated_clusters = separate_pcd_by_labels(norm_clust, labels)
         # remove last label which are "noise" points
-        large_normal_clusters += separated_clusters[:-1]  
+        large_normal_clusters += separated_clusters[:-1]
 
     # Paint point cloud according to cluster
     def paint_pcd_list(pcd_list):
@@ -199,7 +199,9 @@ def partition_by_normal_and_density(pcd, labels, visualise: bool) -> list:
     return large_normal_clusters
 
 
-def fit_models(large_normal_clusters, visualise: bool):
+def fit_models(
+    large_normal_clusters: list[PointCloud], visualise: bool
+) -> Tuple[list[np.ndarray], list[np.ndarray], list[np.ndarray]]:
     # segment planes
     planes = []
     plane_models = []

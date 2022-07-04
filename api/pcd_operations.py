@@ -1,10 +1,10 @@
 import numpy as np
 import open3d as o3d
 import matplotlib.pyplot as plt
-
+from typings.o3d_geometry import PointCloud
 
 # Max vertical threhold
-def vertical_threshold(pcd, threshold_height):
+def vertical_threshold(pcd: PointCloud, threshold_height: float) -> PointCloud:
     points = np.asarray(pcd.points)
     remaining = points[:, 2] < threshold_height
     pcd = pcd.select_by_index(np.arange(len(remaining))[remaining])
@@ -13,7 +13,7 @@ def vertical_threshold(pcd, threshold_height):
 
 
 # Filter out for only points that have close to horizontal normals
-def horizontal_normal_filter(pcd, epsilon):
+def horizontal_normal_filter(pcd: PointCloud, epsilon: float) -> PointCloud:
     normals = np.asarray(pcd.normals)
     vertical = np.array([0.0, 1.0, 0.0])
     dot = np.array([np.dot(vertical, norm) for norm in normals])
@@ -23,7 +23,7 @@ def horizontal_normal_filter(pcd, epsilon):
 
 
 # Cluster using dbscan
-def dbscan_cluster(pcd, epsilon, min_points):
+def dbscan_cluster(pcd: PointCloud, epsilon: float, min_points: int) -> np.ndarray:
     with o3d.utility.VerbosityContextManager(o3d.utility.VerbosityLevel.Error) as cm:
         labels = np.array(
             pcd.cluster_dbscan(eps=epsilon, min_points=min_points, print_progress=False)
@@ -39,7 +39,7 @@ def dbscan_cluster(pcd, epsilon, min_points):
 
 
 # Remove small clusters
-def remove_small_clusters(pcd, labels, min_point_count):
+def remove_small_clusters(pcd: PointCloud, labels: np.ndarray, min_point_count: int) -> PointCloud:
     noise_label = np.amax(labels) + 1
     labels[labels == -1] = noise_label  # need all non-negative for bincount
     count = np.bincount(labels)
@@ -58,7 +58,7 @@ def remove_small_clusters(pcd, labels, min_point_count):
 
 # Perform plane segmentation and get bounding boxes for vertical planes
 def segment_planes(
-    pcd: o3d.geometry.PointCloud,
+    pcd: PointCloud,
     distance_threshold: float,
     num_iterations: int,
     verticality_epsilon: float,
@@ -97,7 +97,7 @@ def segment_planes(
 
 
 # Find and draw oriented bounding boxes
-def get_bounding_boxes(segments):
+def get_bounding_boxes(segments: list[PointCloud]):
     line_sets = []
     boxes = []
     for i in range(len(segments)):
@@ -112,7 +112,7 @@ def get_bounding_boxes(segments):
 
 # Separates one point cloud into a list of point clouds based on the
 # given cluster labels
-def separate_pcd_by_labels(pcd, labels):
+def separate_pcd_by_labels(pcd: PointCloud, labels: np.ndarray) -> list[PointCloud]:
     """pcd: open3d point cloud with N points
     labels: 1xN numpy array of non-negative integers serving as point labels"""
     clusters = []
