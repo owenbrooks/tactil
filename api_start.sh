@@ -1,1 +1,1 @@
-FLASK_APP=api/app flask run
+cd api && FLASK_ENV=development flask run

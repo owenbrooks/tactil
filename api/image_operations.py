@@ -19,7 +19,7 @@ class Coordinate:
 @dataclass
 class ImageInfo:
     """Class for storing location, size and origin of image."""
-    path: str
+    filename: str
     world_dimensions: Dimensions
     origin_camera: Coordinate
 
@@ -43,7 +43,6 @@ def save_image(
     # compute real-world image width
     camera_params = view_control.convert_to_pinhole_camera_parameters()
     image_dimensions = image_width_from_params(camera_params)
-    print(image_dimensions.width, image_dimensions.height)
 
     # decrease field of view to make wall boundaries more clear
     desired_field_of_view = 1.0
@@ -58,9 +57,8 @@ def save_image(
     vis.destroy_window()
 
     origin_camera = find_origin_camera(camera_params)
-    print(origin_camera)
 
-    return ImageInfo(image_path, image_dimensions, origin_camera)
+    return ImageInfo(image_filename, image_dimensions, origin_camera)
 
 
 def normalise_homogeneous_coords(coords: np.array) -> np.array:

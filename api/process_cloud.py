@@ -6,8 +6,8 @@ from sklearn.cluster import MeanShift, estimate_bandwidth
 import matplotlib.pyplot as plt
 import typing
 import os
-from typings.o3d_geometry import PointCloud
-from pcd_operations import (
+from api.typings.o3d_geometry import PointCloud
+from api.pcd_operations import (
     dbscan_cluster,
     remove_small_clusters,
     get_bounding_boxes,
@@ -15,7 +15,7 @@ from pcd_operations import (
     separate_pcd_by_labels,
     vertical_threshold,
 )
-from image_operations import ImageInfo, save_image
+from api.image_operations import ImageInfo, save_image
 from scipy import stats
 from scipy.spatial.transform import Rotation as R
 import math

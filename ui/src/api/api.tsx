@@ -12,7 +12,7 @@ export type Dimensions = {
 };
 
 export type ImageInfo = {
-    path: string | undefined,
+    filename: string | undefined,
     world_dimensions: Dimensions, // height and width of the image in metres
     origin_camera: Coordinate, // world origin expressed in camera frame, metres (camera frame at center of image)
 }

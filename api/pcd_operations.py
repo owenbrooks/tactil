@@ -1,7 +1,7 @@
 import numpy as np
 import open3d as o3d
 import matplotlib.pyplot as plt
-from typings.o3d_geometry import PointCloud
+from api.typings.o3d_geometry import PointCloud
 
 # Max vertical threhold
 def vertical_threshold(pcd: PointCloud, threshold_height: float) -> PointCloud:

@@ -1,8 +1,8 @@
 import os
-from flask import Flask, make_response, request, jsonify, send_from_directory
+from flask import Flask, make_response, request, jsonify, send_file, send_from_directory
 from werkzeug.utils import secure_filename
-from process_cloud import process
-from generate_stl import generate
+from api.process_cloud import process
+from api.generate_stl import generate
 from flask_cors import CORS
 import secrets
 
