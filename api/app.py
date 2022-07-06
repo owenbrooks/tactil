@@ -37,14 +37,14 @@ def process_file():
 
     # TODO: validate filename
     cloud_path = os.path.join(UPLOAD_FOLDER, json["filename"])
-    box_outputs, image_info = process(
+    vector_map, image_info = process(
         cloud_path, IMAGE_FOLDER, visualise=False
     )
 
     resp = jsonify(
         {
             "message": "File successfully processed",
-            "box_outputs": box_outputs,
+            "initial_vector_map": vector_map,
             "pcd_image_info": image_info,
         }
     )

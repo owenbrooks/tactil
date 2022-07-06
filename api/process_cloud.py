@@ -6,6 +6,7 @@ from sklearn.cluster import MeanShift, estimate_bandwidth
 import matplotlib.pyplot as plt
 import typing
 import os
+from api.VectorMap import VectorMap
 from api.typings.o3d_geometry import PointCloud
 from api.pcd_operations import (
     dbscan_cluster,
@@ -27,7 +28,7 @@ def process(
     image_dir: typing.Union[str, bytes, os.PathLike],
     z_index: int = 2,
     visualise=False,
-) -> Tuple[int, ImageInfo]:
+) -> Tuple[VectorMap, ImageInfo]:
     # o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Error)
     pcd = read_cloud(pcd_path, z_index)
     pcd = vertical_threshold(pcd, threshold_height=2.2)  # Remove roof
@@ -39,19 +40,15 @@ def process(
     print("Rotated to primary normal direction")
     large_normal_clusters = partition_by_normal_and_density(pcd, labels, visualise)
     centers, extents, rotations = fit_models(large_normal_clusters, visualise)
+    # convert to VectorMap representation
+    vector_map = VectorMap.from_boxes(centers, extents, rotations)
 
     # Take picture of rotated pcd for editor
     downsampled_for_display.rotate(rotation_matrix, center=(0, 0, 0))
     image_info = save_image(downsampled_for_display, image_dir)
 
-    outputs = {
-        "box_centers": centers,
-        "box_extents": extents,
-        "box_rotations": rotations,
-    }
-
     print("Initial processing complete.")
-    return outputs, image_info
+    return vector_map, image_info
 
 
 def read_cloud(
