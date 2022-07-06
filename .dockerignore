@@ -1,4 +1,5 @@
 env
+venv
 *.pcd
 .vscode
 __pycache__
@@ -6,5 +7,8 @@ api/stl_output
 api/pcd_uploads
 output
 image_output
+ui/node_modules
+Open3D
 target
-venv
+.git
+run.sh

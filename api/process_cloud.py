@@ -6,7 +6,7 @@ from sklearn.cluster import MeanShift, estimate_bandwidth
 import matplotlib.pyplot as plt
 import typing
 import os
-from api.typings.o3d_geometry import PointCloud
+from typings.o3d_geometry import PointCloud
 from pcd_operations import (
     dbscan_cluster,
     remove_small_clusters,
