@@ -1,7 +1,8 @@
+import { features } from "process";
 import { distance } from "../geometry";
 
 export type ProcessReponse = {
-    box_outputs: BoxProperties,
+    initial_vector_map: VectorMap,
     pcd_image_info: ImageInfo,
     message: string,
 };
@@ -56,11 +57,59 @@ export type Graph = {
 };
 
 export type Label = {
+    id: number,
     text: string,
     coord: Coordinate,
 };
 
 export const PIXEL_TO_WORLD_FACTOR = 0.1;
+
+type Feature = Vertex | Edge | Label;
+
+export type VectorMap = {
+    features: Feature[]
+    vertices: number[],
+    edges: number[],
+    labels: number[],
+};
+
+type Vertex = {
+    id: number,
+    position: Coordinate,
+}
+type Edge = {
+    id: number,
+    vertex_id_a: number,
+    vertex_id_b: number
+}
+
+export function vectorMapToGraph(vectorMap: VectorMap | undefined): Graph {
+    if (vectorMap === undefined) {
+        return {
+            nodes: new Map(),
+            edges: new Map(),
+            labels: [],
+        }
+    }
+    
+    const nodes: Map<number, Coordinate> = new Map();
+    const edges: Map<number, [number, number]> = new Map();
+    const labels: Label[] = [];
+
+    vectorMap.vertices.forEach((id) => {
+        nodes.set(id, (vectorMap.features[id] as Vertex).position);
+    });
+    vectorMap.edges.forEach((id) => {
+        const edge = (vectorMap.features[id] as Edge);
+        edges.set(id, [edge.vertex_id_a, edge.vertex_id_b]);
+    });
+
+    return {
+        nodes,
+        edges,
+        labels,
+    };
+}
 
 export function boxParamsToGraph(boxProperties: BoxProperties | undefined): Graph {
     if (boxProperties === undefined) {

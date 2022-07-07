@@ -21,6 +21,7 @@ export default function useLabels(graph: Graph,
                 y: label.coord.y + liveDragOffsetWorld.y,
             };
             return {
+                id: label.id,
                 text: label.text,
                 coord: newCoord,
             }

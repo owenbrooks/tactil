@@ -35,6 +35,7 @@ export default function AddLabel(props: AddLabelProps) {
     function addLabel(finalText: string) {
         if (finalText.length > 0) {
             const newLabel = {
+                id: 1, // TODO: fix id
                 text: finalText,
                 coord: { x: 0.0, y: 0.0 },
             }

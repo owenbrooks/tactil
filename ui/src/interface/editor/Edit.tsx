@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { BoxProperties, Coordinate, boxParamsToGraph, graphToBoxParams, ImageInfo } from '../../api/api';
+import { BoxProperties, Coordinate, boxParamsToGraph, graphToBoxParams, ImageInfo, VectorMap, vectorMapToGraph } from '../../api/api';
 import ScaleBar from '../ScaleBar';
 import './Edit.css'
 import useZoom from './useZoom';
@@ -16,8 +16,8 @@ import LabelView from './LabelView';
 import useLabels from './useLabels';
 
 type EditProps = {
-  boxProperties: BoxProperties | undefined,
-  setBoxProperties: React.Dispatch<React.SetStateAction<BoxProperties | undefined>>,
+  vectorMap: VectorMap | undefined,
+  setVectorMap: React.Dispatch<React.SetStateAction<VectorMap | undefined>>,
   pcdImageInfo: ImageInfo | undefined,
 };
 
@@ -35,7 +35,7 @@ const NODE_RADIUS_PX = 13 / 2; // used for mouse overlap detection and drawing
 
 function Edit(props: EditProps) {
 
-  const initialGraph = boxParamsToGraph(props.boxProperties);
+  const initialGraph = vectorMapToGraph(props.vectorMap);
   const [
     graphState,
     {
@@ -83,11 +83,11 @@ function Edit(props: EditProps) {
   const { labelsWithDragOffset, selectedLabels, editingLabelIndex, selectAllLabels, deselectAllLabels, labelsHandleClick, handleLabelChange, stopEditingLabel, labelsHandleMouseUp } = useLabels(graph, setGraph, mousePos, viewState);
 
   // Update parent's box properties when nodes or edges are changed
-  const { setBoxProperties } = props;
+  const { setVectorMap } = props;
   useEffect(() => {
-    const newBoxProperties = graphToBoxParams(graph);
-    setBoxProperties(newBoxProperties);
-  }, [graph, setBoxProperties])
+    const newVectorMap = graphToVectorMap(graph);
+    setVectorMap(newVectorMap);
+  }, [graph, setVectorMap])
 
   // Panning and mouse controls
   function handleMouseMove(e: React.MouseEvent<HTMLDivElement, MouseEvent>) {
