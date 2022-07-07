@@ -1,8 +1,7 @@
-import { features } from "process";
 import { distance } from "../geometry";
 
 export type ProcessReponse = {
-    initial_vector_map: VectorMap,
+    initial_vector_map: VectorMapPython,
     pcd_image_info: ImageInfo,
     message: string,
 };
@@ -66,8 +65,15 @@ export const PIXEL_TO_WORLD_FACTOR = 0.1;
 
 type Feature = Vertex | Edge | Label;
 
+type VectorMapPython = {
+    features: Record<number, Feature>,
+    vertices: number[],
+    edges: number[],
+    labels: number[],
+}
+
 export type VectorMap = {
-    features: Feature[]
+    features: Map<number, Feature>,
     vertices: number[],
     edges: number[],
     labels: number[],
@@ -91,16 +97,16 @@ export function vectorMapToGraph(vectorMap: VectorMap | undefined): Graph {
             labels: [],
         }
     }
-    
+
     const nodes: Map<number, Coordinate> = new Map();
     const edges: Map<number, [number, number]> = new Map();
     const labels: Label[] = [];
 
     vectorMap.vertices.forEach((id) => {
-        nodes.set(id, (vectorMap.features[id] as Vertex).position);
+        nodes.set(id, (vectorMap.features.get(id) as Vertex).position);
     });
     vectorMap.edges.forEach((id) => {
-        const edge = (vectorMap.features[id] as Edge);
+        const edge = (vectorMap.features.get(id) as Edge);
         edges.set(id, [edge.vertex_id_a, edge.vertex_id_b]);
     });
 
@@ -178,6 +184,79 @@ export function boxParamsToGraph(boxProperties: BoxProperties | undefined): Grap
         edges: edges,
         labels: [],
     }
+}
+
+export function deserializeVectorMap(response: ProcessReponse): VectorMap {
+    const apiVectorMap = response.initial_vector_map;
+
+    const vectorMap: VectorMap = {
+        features: new Map(),
+        vertices: apiVectorMap.vertices,
+        edges: apiVectorMap.edges,
+        labels: apiVectorMap.labels,
+    };
+
+    // Convert features Record to Map
+    for (let entryId in apiVectorMap.features) {
+        const id = parseInt(entryId);
+        vectorMap.features.set(id, apiVectorMap.features[id]);
+    }
+
+    return vectorMap;
+}
+
+export function serializeVectorMap(vectorMap: VectorMap): VectorMapPython {
+    const vectorMapSerialized: VectorMapPython = {
+        features: {},
+        vertices: vectorMap.vertices,
+        edges: vectorMap.edges,
+        labels: vectorMap.labels,
+    };
+
+    // Convert features Map to Record
+    vectorMap.features.forEach((feature) => {
+        vectorMapSerialized.features[feature.id] = feature;
+    });
+
+    return vectorMapSerialized;
+}
+
+export function graphToVectorMap(graph: Graph | undefined): VectorMap {
+    const vectorMap: VectorMap = {
+        features: new Map(),
+        vertices: [],
+        edges: [],
+        labels: [],
+    };
+    if (graph === undefined) {
+        return vectorMap;
+    }
+
+    graph.nodes.forEach((position, id) => {
+        const vertex: Vertex = {
+            id,
+            position,
+        };
+        vectorMap.features.set(id, vertex);
+        vectorMap.vertices.push(id);
+    });
+
+    graph.edges.forEach(([nodeIdA, nodeIdB], edgeId) => {
+        const edge: Edge = {
+            id: edgeId,
+            vertex_id_a: nodeIdA,
+            vertex_id_b: nodeIdB,
+        };
+        vectorMap.features.set(edgeId, edge);
+        vectorMap.edges.push(edge.id);
+    });
+
+    graph.labels.forEach((label) => {
+        vectorMap.features.set(label.id, label);
+        vectorMap.labels.push(label.id);
+    });
+
+    return vectorMap;
 }
 
 export function graphToBoxParams(graph: Graph | undefined): BoxProperties {

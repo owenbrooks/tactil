@@ -61,8 +61,8 @@ def generate_model():
         return "Content-Type not supported!"
 
     # TODO: validate filename
-    box_outputs = json["box_outputs"]
-    generate(box_outputs, visualise=False)
+    vector_map = json["vector_map"]
+    generate(vector_map, visualise=False)
 
     resp = jsonify({"message": "File successfully generated"})
     resp.status_code = 200

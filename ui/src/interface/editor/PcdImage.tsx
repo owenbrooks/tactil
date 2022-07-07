@@ -38,7 +38,9 @@ function PcdImage(props: PcdImageProps) {
                     width: imageDisplayDimensions.x,
                     height: imageDisplayDimensions.y,
                     pointerEvents: 'none',
-                }} draggable={false} />
+                }} draggable={false}
+                alt={"Room scan from bird's eye view"}
+            />
         </>
     )
 }

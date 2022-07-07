@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from math import sqrt
+from typing import Dict, Union
 import numpy as np
 
 @dataclass
@@ -38,7 +40,7 @@ def apply_translation(coord: Coord2D, translation: Coord2D) -> Coord2D:
 @dataclass
 class VectorMap:
     """ Class for storing a 2D vector representation of an indoor map """
-    features: list[Vertex, Edge, Label]
+    features: Dict[int, Union[Label, Vertex, Edge]]
     vertices: list[int]
     edges: list[int]
     labels: list[int]
@@ -47,7 +49,7 @@ class VectorMap:
     def from_boxes(cls, centers, extents, rotations):
         vertices = []
         edges = []
-        features = []
+        features: Dict[int, Union[Label, Vertex, Edge]] = dict()
 
         for center, extent, rotation in zip(centers, extents, rotations):
 
@@ -63,15 +65,25 @@ class VectorMap:
             vert_b_coord = apply_translation(vert_b_no_transform, center_coord)
 
             maxId = len(features) - 1 # Find new ids according to current max id
+            
+            vertex_a_id = maxId+1
+            vertex_b_id = maxId+2
+            edge_id = maxId+3
 
-            vertex_a = Vertex(maxId+1, vert_a_coord)
-            vertex_b = Vertex(maxId+2, vert_b_coord)
-            edge = Edge(maxId+3, vertex_a.id, vertex_b.id)
+            vertex_a = Vertex(vertex_a_id, vert_a_coord)
+            vertex_b = Vertex(vertex_b_id, vert_b_coord)
+            edge = Edge(edge_id, vertex_a.id, vertex_b.id)
 
             vertices += [vertex_a.id, vertex_b.id]
             edges += [edge.id]
-            features += [vertex_a, vertex_b, edge]
+
+            features[vertex_a_id] = vertex_a
+            features[vertex_b_id] = vertex_b
+            features[edge_id] = edge
 
         labels = []
 
         return cls(features, vertices, edges, labels)
+
+def euclidean_distance(coord_a: Coord2D, coord_b: Coord2D) -> float:
+    return sqrt((coord_a.x-coord_b.x)**2 + (coord_a.y-coord_b.y)**2)

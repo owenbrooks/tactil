@@ -3,23 +3,22 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Upload from './Upload';
 import Generate from './Generate';
 import Edit from './editor/Edit';
-import { Dimensions, ImageInfo } from "../api/api";
+import { ImageInfo, VectorMap } from "../api/api";
 import { useState } from 'react';
-import { BoxProperties } from '../api/api';
 
 function Interface() {
 
-  const [boxProperties, setBoxProperties] = useState<BoxProperties>();
+  const [vectorMap, setVectorMap] = useState<VectorMap>();
   const [pcdImageInfo, setPcdImageInfo] = useState<ImageInfo>();
 
   return (
     <Routes>
       <Route path="upload" element={
-        <Upload setBoxProperties={setBoxProperties} setPcdImageInfo={setPcdImageInfo}/>} />
+        <Upload setVectorMap={setVectorMap} setPcdImageInfo={setPcdImageInfo}/>} />
       <Route path="edit" element={
-        <Edit boxProperties={boxProperties} setBoxProperties={setBoxProperties} pcdImageInfo={pcdImageInfo}/>}
+        <Edit vectorMap={vectorMap} setVectorMap={setVectorMap} pcdImageInfo={pcdImageInfo}/>}
       />
-      <Route path="generate" element={<Generate boxProperties={boxProperties} />} />
+      <Route path="generate" element={<Generate vectorMap={vectorMap} />} />
       <Route
         path="*"
         element={<Navigate to="/upload" replace />}

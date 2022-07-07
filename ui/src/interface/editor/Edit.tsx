@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { BoxProperties, Coordinate, boxParamsToGraph, graphToBoxParams, ImageInfo, VectorMap, vectorMapToGraph } from '../../api/api';
+import { Coordinate, ImageInfo, VectorMap, vectorMapToGraph, graphToVectorMap } from '../../api/api';
 import ScaleBar from '../ScaleBar';
 import './Edit.css'
 import useZoom from './useZoom';

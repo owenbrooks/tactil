@@ -1,13 +1,13 @@
 import React, { SyntheticEvent, useState } from 'react';
 import './Interface.css'
 import { useNavigate } from "react-router-dom";
-import { ProcessReponse, postData, BoxProperties, ImageInfo } from '../api/api';
+import { ProcessReponse, postData, ImageInfo, VectorMap, deserializeVectorMap } from '../api/api';
 const upload_url = "http://localhost:5000/upload"
 const process_url = "http://localhost:5000/process"
 const example_api_response = require('./example_api_response.json');
 
 type UploadProps = {
-    setBoxProperties: React.Dispatch<React.SetStateAction<BoxProperties | undefined>>,
+    setVectorMap: React.Dispatch<React.SetStateAction<VectorMap | undefined>>,
     setPcdImageInfo: React.Dispatch<React.SetStateAction<ImageInfo | undefined>>,
 }
 
@@ -49,7 +49,8 @@ function Upload(props: UploadProps) {
                     postData(process_url, data).then((response: ProcessReponse) => {
                         console.log(response)
                         setIsProcessing(false);
-                        props.setBoxProperties(response.box_outputs);
+                        const vectorMap = deserializeVectorMap(response);
+                        props.setVectorMap(vectorMap);
                         props.setPcdImageInfo(response.pcd_image_info);
                         navigate("/edit");
                     });
@@ -61,7 +62,7 @@ function Upload(props: UploadProps) {
             console.error("No file selected.");
             // Provide a test api response in dev mode
             if (isDevEnvironment) {
-                props.setBoxProperties(example_api_response.box_outputs);
+                // props.setBoxProperties(example_api_response.box_outputs);
                 props.setPcdImageInfo(example_api_response.pcd_image_info);
                 navigate("/edit");
             } 
@@ -75,8 +76,9 @@ function Upload(props: UploadProps) {
             postData(process_url, data).then((response: ProcessReponse) => {
                 console.log(response)
                 setIsProcessing(false);
-                props.setBoxProperties(response.box_outputs);
-                navigate("/edit")
+                const vectorMap = deserializeVectorMap(response);
+                props.setVectorMap(vectorMap);
+        navigate("/edit")
             });
         }
     }

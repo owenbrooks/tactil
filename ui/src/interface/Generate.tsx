@@ -1,9 +1,10 @@
 import { SyntheticEvent, useState } from 'react';
-import { BoxProperties, postData } from '../api/api';
-const generate_url = "http://localhost:5000/generate"
+import { postData, VectorMap } from '../api/api';
+const generateUrl = "http://localhost:5000/generate"
+const outputUrl = generateUrl + "/output";
 
 type GenerateProps = {
-  boxProperties: BoxProperties | undefined,
+  vectorMap: VectorMap | undefined,
 }
 
 function Generate(props: GenerateProps) {
@@ -11,11 +12,11 @@ function Generate(props: GenerateProps) {
   const [generateFinished, setGenerateFinished] = useState(false);
 
   const handleGenerate = (_: SyntheticEvent) => {
-    const data = {"box_outputs": props.boxProperties};
-    postData(generate_url, data).then(response => {
+    const generatePayload = { "vector_map": props.vectorMap };
+    postData(generateUrl, generatePayload).then(response => {
       console.log(response);
       setGenerateFinished(true);
-    })
+    });
   }
 
   return (
@@ -24,7 +25,7 @@ function Generate(props: GenerateProps) {
         <button onClick={handleGenerate}>Generate</button>
       </div>
       <br />
-      {generateFinished && <a href="http://localhost:5000/generate/output" download target="_self">Download</a>}
+      {generateFinished && <a href={outputUrl} download target="_self">Download</a>}
     </div>
   );
 }

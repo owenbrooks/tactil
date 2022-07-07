@@ -1,12 +1,24 @@
+from dataclasses import dataclass
 import numpy as np
 import os
 from stl import mesh
 from scipy.spatial.transform import Rotation as R
 
-def generate(box_properties, visualise):
-    centers_unscaled = np.array(box_properties['box_centers'])
-    extents_unscaled = np.array(box_properties['box_extents'])
-    rotations = np.array(box_properties['box_rotations'])
+from api.VectorMap import VectorMap, euclidean_distance
+
+@dataclass
+class BoxProperties:
+    """ Class for representing a list of N 3D rectangular prisms """
+    box_centers: list[np.array] # Nx3 coordinates
+    box_extents: list[np.array] # Nx3 measurements of length/2, width/2, height/2
+    box_rotations: list[np.array] # Nx3x3 rotation matrices
+
+def generate(vector_map: VectorMap, visualise: bool):
+    box_properties = vector_map_to_box_properties(vector_map)
+
+    centers_unscaled = np.array(box_properties.box_centers)
+    extents_unscaled = np.array(box_properties.box_extents)
+    rotations = np.array(box_properties.box_rotations)
 
     # scale dimensions down to model size
     model_scale_factor = 1/120
@@ -130,6 +142,41 @@ def display_meshes(meshes):
 
     # Show the plot to the screen
     pyplot.show()
+
+def vector_map_to_box_properties(vector_map: VectorMap) -> BoxProperties:
+    """ Convert the walls in 2D vector representation to 3D rectangular prisms """
+    box_centers = []
+    box_extents = []
+    box_rotations = []
+
+    for edge_id in vector_map.edges:
+        edge = vector_map.features[edge_id]
+        vertex_a = vector_map.features[edge.vertex_id_a]
+        vertex_b = vector_map.features[edge.vertex_id_b]
+
+        average = np.array([
+            (vertex_a.position.x + vertex_b.position.x)/2,
+            (vertex_a.position.y + vertex_b.position.y)/2,  
+            0,          
+        ])
+        box_centers.append(average)
+
+        length = euclidean_distance(vertex_a.position, vertex_b.position)
+        height = 1 # metre
+        thickness = 0.1 # metres
+        box_extents.append(np.array(length, thickness, height))
+
+        zAngleRad = np.arctan2((vertex_b.position.y - vertex_a.y), (vertex_b.position.x - vertex_a.position.x))
+        cosTheta = np.cos(zAngleRad)
+        sinTheta = np.sin(zAngleRad)
+        rotMatrix = np.array([
+            [cosTheta, -sinTheta, 0],
+            [sinTheta, cosTheta, 0],
+            [0, 0, 1]
+        ])
+        box_rotations.append(rotMatrix)
+
+    return BoxProperties(box_centers, box_extents, box_rotations)
 
 if __name__ == "__main__":
     # load data of wall bounding boxes from numpy files
