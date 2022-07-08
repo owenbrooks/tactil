@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+# from dataclasses import dataclass
+from marshmallow_dataclass import dataclass
 from math import sqrt
 from typing import Dict, Union
 import numpy as np

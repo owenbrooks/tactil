@@ -164,9 +164,9 @@ def vector_map_to_box_properties(vector_map: VectorMap) -> BoxProperties:
         length = euclidean_distance(vertex_a.position, vertex_b.position)
         height = 1 # metre
         thickness = 0.1 # metres
-        box_extents.append(np.array(length, thickness, height))
+        box_extents.append(np.array([length, thickness, height]))
 
-        zAngleRad = np.arctan2((vertex_b.position.y - vertex_a.y), (vertex_b.position.x - vertex_a.position.x))
+        zAngleRad = np.arctan2((vertex_b.position.y - vertex_a.position.y), (vertex_b.position.x - vertex_a.position.x))
         cosTheta = np.cos(zAngleRad)
         sinTheta = np.sin(zAngleRad)
         rotMatrix = np.array([

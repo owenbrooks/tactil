@@ -1,10 +1,15 @@
+import json
 import os
 from flask import Flask, make_response, request, jsonify, send_file, send_from_directory
+from marshmallow_dataclass import dataclass
 from werkzeug.utils import secure_filename
+from api.VectorMap import VectorMap
 from api.process_cloud import process
 from api.generate_stl import generate
 from flask_cors import CORS
 import secrets
+
+from api.test.vector_map_conversion import vecmap_boxes_conversion
 
 UPLOAD_FOLDER = "./pcd_uploads"
 ALLOWED_EXTENSIONS = {"txt", "pdf", "png", "jpg", "jpeg", "gif", "pcd", "xyz"}
@@ -51,18 +56,23 @@ def process_file():
     resp.status_code = 200
     return resp
 
+@dataclass
+class GeneratePayload():
+    vector_map: VectorMap
 
 @app.route("/generate", methods=["POST"])
 def generate_model():
     content_type = request.headers.get("Content-Type")
     if content_type == "application/json":
-        json = request.json
+        json_payload = request.json
     else:
         return "Content-Type not supported!"
 
     # TODO: validate filename
-    vector_map = json["vector_map"]
-    generate(vector_map, visualise=False)
+    generate_payload = GeneratePayload.Schema().load(json_payload)
+    print(generate_payload.vector_map)
+
+    generate(generate_payload.vector_map, visualise=False)
 
     resp = jsonify({"message": "File successfully generated"})
     resp.status_code = 200

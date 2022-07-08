@@ -1,5 +1,5 @@
 import { SyntheticEvent, useState } from 'react';
-import { postData, VectorMap } from '../api/api';
+import { postData, serializeVectorMap, VectorMap } from '../api/api';
 const generateUrl = "http://localhost:5000/generate"
 const outputUrl = generateUrl + "/output";
 
@@ -12,11 +12,14 @@ function Generate(props: GenerateProps) {
   const [generateFinished, setGenerateFinished] = useState(false);
 
   const handleGenerate = (_: SyntheticEvent) => {
-    const generatePayload = { "vector_map": props.vectorMap };
-    postData(generateUrl, generatePayload).then(response => {
-      console.log(response);
-      setGenerateFinished(true);
-    });
+    if (props.vectorMap !== undefined) {
+      const generatePayload = { "vector_map": serializeVectorMap(props.vectorMap) };
+      console.log(generatePayload)
+      postData(generateUrl, generatePayload).then(response => {
+        console.log(response);
+        setGenerateFinished(true);
+      });
+    } // TODO: handle undefined case
   }
 
   return (

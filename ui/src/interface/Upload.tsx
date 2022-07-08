@@ -62,7 +62,8 @@ function Upload(props: UploadProps) {
             console.error("No file selected.");
             // Provide a test api response in dev mode
             if (isDevEnvironment) {
-                // props.setBoxProperties(example_api_response.box_outputs);
+                const vectorMap = deserializeVectorMap(example_api_response);
+                props.setVectorMap(vectorMap);
                 props.setPcdImageInfo(example_api_response.pcd_image_info);
                 navigate("/edit");
             } 
