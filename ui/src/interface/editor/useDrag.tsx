@@ -25,8 +25,7 @@ export function useDrag(mousePos: Coordinate, viewState: ViewState) {
             return null;
         }
     })();
-    const isDragging = liveDragOffsetWorld !== null && liveDragOffsetWorld.x !== 0 && liveDragOffsetWorld.y !== 0;
-
+    const isDragging = liveDragOffsetWorld !== null && (liveDragOffsetWorld.x !== 0 || liveDragOffsetWorld.y !== 0);
     function startDragging() {
         setDragStartPosWorld(mousePosWorld); // start dragging
     }
