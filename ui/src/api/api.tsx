@@ -55,10 +55,17 @@ export type Graph = {
     labels: Label[],
 };
 
+export enum Alphabet {
+    Regular = "REGULAR",
+    Braille = "BRAILLE",
+}
+
 export type Label = {
     id: number,
     text: string,
     coord: Coordinate,
+    size: number, // TODO: decide what this represents
+    alphabet: Alphabet
 };
 
 export const PIXEL_TO_WORLD_FACTOR = 0.1;

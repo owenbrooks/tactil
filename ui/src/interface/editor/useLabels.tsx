@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Coordinate, Graph } from "../../api/api";
+import { Coordinate, Graph, Label } from "../../api/api";
 import { ViewState } from "./Edit";
 import { useDrag } from "./useDrag";
 
@@ -20,11 +20,11 @@ export default function useLabels(graph: Graph,
                 x: label.coord.x + liveDragOffsetWorld.x,
                 y: label.coord.y + liveDragOffsetWorld.y,
             };
-            return {
-                id: label.id,
-                text: label.text,
+            const newLabel: Label = {
+                ...label,
                 coord: newCoord,
-            }
+            };
+            return newLabel;
         }
     });
 

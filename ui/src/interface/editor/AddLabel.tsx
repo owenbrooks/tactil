@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Graph } from "../../api/api";
+import { Alphabet, Graph, Label } from "../../api/api";
 
 // Unicode Braille conversion adapted from https://stackoverflow.com/questions/69756010/convert-string-to-braille
 let map: any = " A1B'K2L@CIF/MSP\"E3H9O6R^DJG>NTQ,*5<-U8V.%[$+X!&;:4\\0Z7(_?W]#Y)=".split("").reduce((o, n, i) => {
@@ -24,20 +24,22 @@ export default function AddLabel(props: AddLabelProps) {
     }
 
     function addText() {
-        addLabel(labelText);
+        addLabel(labelText, false);
     }
 
     function addBraille() {
         // convert to braille before adding
-        addLabel(toBraille(labelText));
+        addLabel(toBraille(labelText), true);
     }
 
-    function addLabel(finalText: string) {
+    function addLabel(finalText: string, useBraille: boolean) {
         if (finalText.length > 0) {
-            const newLabel = {
+            const newLabel: Label = {
                 id: 1, // TODO: fix id
                 text: finalText,
                 coord: { x: 0.0, y: 0.0 },
+                alphabet: useBraille ? Alphabet.Braille : Alphabet.Regular,
+                size: 12, // default size
             }
             setGraph({ nodes: graph.nodes, edges: graph.edges, labels: [...graph.labels, newLabel] });
             setLabelText("");
