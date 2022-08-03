@@ -60,6 +60,7 @@ export function useSelected(hoveredNodes: number[], graph: Graph, setGraph: (new
                 }
             }
         });
+        deselectAllNodes();
         setGraph(newGraph);
     }
 
