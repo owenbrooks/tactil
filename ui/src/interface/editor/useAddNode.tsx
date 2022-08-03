@@ -13,7 +13,7 @@ export default function useAddNode(
     hoveredNodes: number[],
 ) {
     const [prevNodeId, setPrevNodeId] = useState<number | undefined>();
-    const unplacedId = Math.max(0, Math.max(...graph.nodes.keys()) + 1);
+    const unplacedId = Math.max(0, Math.max(...graph.nodes.keys(), ...graph.edges.keys()) + 1);
     const unplacedCoord = pixelToWorld(mousePos, viewState.panOffset, viewState.zoomLevel);
 
     function resetPreviousAddition() {
@@ -35,8 +35,8 @@ export default function useAddNode(
             const newEdges = new Map(graph.edges);
             if (prevNodeId !== undefined) {
                 // add edge if previously placed
-                const maxEdgeId = Math.max(0, Math.max(...graph.edges.keys()) + 1);
-                newEdges.set(maxEdgeId, [unplacedId, prevNodeId]);
+                const newEdgeId = unplacedId + 1;
+                newEdges.set(newEdgeId, [unplacedId, prevNodeId]);
             }
 
             const newGraph = { nodes: newNodes, edges: newEdges, labels: [...graph.labels] };
