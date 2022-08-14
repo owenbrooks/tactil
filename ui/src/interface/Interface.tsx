@@ -5,6 +5,8 @@ import Generate from './Generate';
 import Edit from './editor/Edit';
 import { ImageInfo, VectorMap } from "../api/api";
 import { useState } from 'react';
+import Home from './Home';
+import Scan from './Scan';
 
 function Interface() {
 
@@ -13,6 +15,8 @@ function Interface() {
 
   return (
     <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/scan" element={<Scan />} />
       <Route path="upload" element={
         <Upload setVectorMap={setVectorMap} setPcdImageInfo={setPcdImageInfo}/>} />
       <Route path="edit" element={
@@ -21,7 +25,7 @@ function Interface() {
       <Route path="generate" element={<Generate vectorMap={vectorMap} />} />
       <Route
         path="*"
-        element={<Navigate to="/upload" replace />}
+        element={<Navigate to="/" replace />}
       />
     </Routes>
   );

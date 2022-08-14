@@ -1,0 +1,12 @@
+
+ol {
+  text-align: left;
+  text-align-last: left;
+  list-style-position: inside;
+  padding-inline-start: none;
+}
+
+.instruction-page {
+  text-align: left;
+  padding-inline: 48px;
+}

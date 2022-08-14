@@ -5,8 +5,8 @@
 .App-header {
   min-height: 100vh;
   display: grid;
-  align-items: center;
-  justify-content: center;
+  /* align-items: center; */
+  /* justify-content: center; */
   font-size: calc(10px + 2vmin);
   grid-template-columns: 100px 1fr;
 }

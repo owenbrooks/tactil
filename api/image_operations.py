@@ -38,7 +38,9 @@ def save_image(
     vis.add_geometry(pcd)
     vis.update_geometry(pcd)
     view_control = vis.get_view_control()
+    print(view_control)
     view_control.set_zoom(0.4)
+    print("test")
 
     # compute real-world image width
     camera_params = view_control.convert_to_pinhole_camera_parameters()

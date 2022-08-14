@@ -8,6 +8,8 @@ import { Link, useLocation } from "react-router-dom";
 function Navbar() {
   return (
     <div className="sidenav">
+      <NavItem to="/"><img src={upload} alt="Home icon"/>Home</NavItem>
+      <NavItem to="/scan"><img src={upload} alt="Scan icon"/>Scan</NavItem>
       <NavItem to="/upload"><img src={upload} alt="Upload icon"/>Upload</NavItem>
       <NavItem to="/edit"><img src={edit} alt="Edit icon"/>Edit</NavItem>
       <NavItem to="/generate"><img src={generate} alt="Generate icon"/>Generate</NavItem>

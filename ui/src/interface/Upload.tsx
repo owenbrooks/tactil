@@ -85,6 +85,9 @@ function Upload(props: UploadProps) {
     }
 
     return (
+        <>
+        <div className='instruction-page'>
+        <h1>Upload</h1>
         <div className="interface">
             {(!isUploading && !isProcessing && !uploadFinished) &&
                 <><p>Choose a .pcd file to upload</p>
@@ -106,6 +109,8 @@ function Upload(props: UploadProps) {
                     <div className='lds-dual-ring'></div>
                 </div>}
         </div>
+        </div>
+        </>
     );
 }
 
