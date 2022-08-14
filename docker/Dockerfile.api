@@ -1,0 +1,19 @@
+FROM python:3.9.13-bullseye
+
+RUN apt-get update && apt-get install -y libgl1 \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Install python dependencies:
+COPY requirements.txt .
+RUN python -m pip install -r requirements.txt
+
+# Copy source files
+ENV SOURCE_DIR=/tactil
+COPY . ${SOURCE_DIR}
+
+ENV FLASK_ENV=development
+ENV FLASK_APP=app
+
+WORKDIR ${SOURCE_DIR}/api
+CMD ["python", "-m", "flask", "run", "--host=0.0.0.0"]

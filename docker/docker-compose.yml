@@ -1,0 +1,22 @@
+version: "3.9"
+services:
+  api:
+    container_name: tactil_api
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    image: tactil-api
+    ports:
+      - "5000:5000"
+    volumes:
+      - ../:/tactil:rw
+  ui:
+    container_name: tactil_ui
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.ui
+    image: tactil-ui
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../:/tactil:rw
