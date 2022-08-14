@@ -2,38 +2,35 @@
 
 ![Screenshot of filtered point cloud](assets/screenshot.png)
 
-## Requirements
+# Getting started
+## Option 1: Running in docker
+### Requirements
+- Docker for [Windows](https://docs.docker.com/desktop/install/windows-install/), [macOS](https://docs.docker.com/desktop/install/mac-install/), or [linux](https://docs.docker.com/engine/install/ubuntu/)
+- On linux systems, make sure [Docker Compose](https://docs.docker.com/compose/install/) is installed.
+
+### Run the application
+1. `git clone git@github.com:owenbrooks/fyp.git`
+2. `cd fyp/docker`
+3. `docker-compose up`
+4. Go to [http://127.0.0.1:3000](http://127.0.0.1:3000)
+
+## Option 2: Building from source
+
+### Requirements
 - Linux (ubuntu/arch)
 - Python 3.9 (`yay -S python39`)
 - pip (`sudo pacman -S python-pip`)
 - virtualenv (`pip install virtualenv`)
-- rust
 
-## Environment Setup
+### Environment Setup
 1. `git clone https://github.com/owenbrooks/fyp.git && cd fyp`
-2. `python -m virtualenv --python=/usr/bin/python3.9 env`
-3. `source env/bin/activate`
+2. `python -m virtualenv --python=/usr/bin/python3.9 venv`
+3. `source venv/bin/activate`
 4. `pip install -r requirements.txt`
 
-## How to build
-- `maturin develop`
+### How to run 
 
-## How to run 
-### Generating an STL from a point cloud (.pcd) file
-1. Download a .pcd file (e.g. `pcd_file.pcd`)
-1. `source env/bin/activate`
-2. `python process_cloud.py pcd_file.pcd`
-3. `python generate_stl.py`
+1. Run the flask API: `./api_start.sh`
+2. Run the react UI: `./ui_start.sh`
 
-The generated STL file can be found in `output/out.stl`
-
-### Running the flask api
-1. `source env/bin/activate`
-2. `cd backend`
-3. `flask run --host=0.0.0.0`
-
-The upload form can be found at [http://127.0.0.1:5000](http://127.0.0.1:5000)
-
-### Running the react UI
-1. `cd ui`
-2. `npm start`
+The upload form can be found at [http://127.0.0.1:3000](http://127.0.0.1:3000)
