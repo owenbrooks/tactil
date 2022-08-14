@@ -92,7 +92,11 @@ def upload_file():
             return "No selected file", 400
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+            try:
+                file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
+            except FileNotFoundError:
+                os.makedirs(app.config["UPLOAD_FOLDER"])
+                file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
             response = make_response("")
             response.headers.add("Access-Control-Allow-Origin", "*")
             return response
