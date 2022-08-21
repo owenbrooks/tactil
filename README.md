@@ -34,3 +34,6 @@
 2. Run the react UI: `./ui_start.sh`
 
 The upload form can be found at [http://127.0.0.1:3000](http://127.0.0.1:3000)
+
+# Credits
+Home icon by Putri Apriliza

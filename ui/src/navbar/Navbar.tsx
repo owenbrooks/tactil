@@ -3,12 +3,13 @@ import './Navbar.css'
 import upload from './upload.svg'
 import edit from './edit.svg'
 import generate from './generate.svg'
+import home from './home.svg'
 import { Link, useLocation } from "react-router-dom";
 
 function Navbar() {
   return (
     <div className="sidenav">
-      <NavItem to="/"><img src={upload} alt="Home icon"/>Home</NavItem>
+      <NavItem to="/"><img src={home} alt="Home icon"/>Home</NavItem>
       <NavItem to="/scan"><img src={upload} alt="Scan icon"/>Scan</NavItem>
       <NavItem to="/upload"><img src={upload} alt="Upload icon"/>Upload</NavItem>
       <NavItem to="/edit"><img src={edit} alt="Edit icon"/>Edit</NavItem>
