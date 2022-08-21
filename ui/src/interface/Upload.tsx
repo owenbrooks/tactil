@@ -53,13 +53,23 @@ function Upload(props: UploadProps) {
                         props.setVectorMap(vectorMap);
                         props.setPcdImageInfo(response.pcd_image_info);
                         navigate("/edit");
+                    }).catch((error: any) => {
+                        console.error(error);
+                        alert("Error: Failed to process scan.");
+                        setIsUploading(false);
+                        setUploadFinished(false);
+                        setIsProcessing(false);
                     });
                 }
+            }).catch((error: any) => {
+                console.error(error);
+                alert(error);
             });
 
 
         } else {
             console.error("No file selected.");
+            alert("Error: No file selected.\nPlease select a file.")
             // Provide a test api response in dev mode
             if (isDevEnvironment) {
                 const vectorMap = deserializeVectorMap(example_api_response);
