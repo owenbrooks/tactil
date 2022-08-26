@@ -16,7 +16,7 @@ from api.pcd_operations import (
     separate_pcd_by_labels,
     vertical_threshold,
 )
-from api.image_operations import ImageInfo, save_image
+from api.image_operations import Coordinate, Dimensions, ImageInfo, save_image
 from scipy import stats
 from scipy.spatial.transform import Rotation as R
 import math
@@ -45,7 +45,11 @@ def process(
 
     # Take picture of rotated pcd for editor
     downsampled_for_display.rotate(rotation_matrix, center=(0, 0, 0))
-    image_info = save_image(downsampled_for_display, image_dir)
+    try:
+        image_info = save_image(downsampled_for_display, image_dir)
+    except RuntimeError as e:
+        print(e)
+        image_info = None
 
     print("Initial processing complete.")
     return vector_map, image_info
@@ -107,7 +111,7 @@ def remove_nonwall_points(pcd: PointCloud, visualise: bool) -> PointCloud:
     # Perform dbscan clustering and remove small clusters
     min_cluster_size = 20  # points
     rem_small_tic = time.perf_counter()
-    labels = dbscan_cluster(pcd, epsilon=0.2, min_points=10)
+    labels = dbscan_cluster(pcd, epsilon=0.5, min_points=20)
     rem_small_toc = time.perf_counter()
     print(f"Performed clustering in {rem_small_toc-rem_small_tic: 0.4f} seconds")
     if visualise:

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Coordinate, ImageInfo } from "../../api/api";
 import { worldToPixel } from "../../geometry";
 
@@ -8,6 +9,8 @@ type PcdImageProps = {
 }
 
 function PcdImage(props: PcdImageProps) {
+    const [hasImageError, setHasImageError] = useState(false);
+
     // calculate width and height for display of pcd image
     const imageDisplayDimensions = worldToPixel({
         x: props.imageInfo.world_dimensions.width,
@@ -27,10 +30,17 @@ function PcdImage(props: PcdImageProps) {
     const image_left = 'calc(' + totalOffset.x + 'px + 50%)';
     const image_top = 'calc(' + totalOffset.y + 'px + 50%)';
 
+    console.log(props.imageInfo)
+
+    const handleImageError = () => {
+        setHasImageError(true);
+    }
+
     return (
         <>
             {/* <img src={"http://localhost:5000/./image_output/f9fff180-7302-4b2c-9e3f-541d6934cc75.png"} */}
-            <img src={"http://localhost:5000/image_output/" + props.imageInfo.filename}
+            {!hasImageError && <img src={"http://localhost:5000/image_output/" + props.imageInfo.filename}
+                onError={handleImageError}
                 style={{
                     left: image_left,
                     top: image_top,
@@ -40,7 +50,7 @@ function PcdImage(props: PcdImageProps) {
                     pointerEvents: 'none',
                 }} draggable={false}
                 alt={"Room scan from bird's eye view"}
-            />
+            />}
         </>
     )
 }
