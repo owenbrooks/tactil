@@ -8,3 +8,4 @@ output
 image_output
 target
 venv
+*.egg-info

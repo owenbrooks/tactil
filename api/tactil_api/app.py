@@ -3,13 +3,11 @@ import os
 from flask import Flask, make_response, request, jsonify, send_file, send_from_directory
 from marshmallow_dataclass import dataclass
 from werkzeug.utils import secure_filename
-from api.VectorMap import VectorMap
-from api.process_cloud import process
-from api.generate_stl import generate
+from .VectorMap import VectorMap
+from .process_cloud import process
+from .generate_stl import generate
 from flask_cors import CORS
 import secrets
-
-from api.test.vector_map_conversion import vecmap_boxes_conversion
 
 UPLOAD_FOLDER = "./pcd_uploads"
 ALLOWED_EXTENSIONS = {"txt", "pdf", "png", "jpg", "jpeg", "gif", "pcd", "xyz"}

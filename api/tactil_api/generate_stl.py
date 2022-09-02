@@ -4,7 +4,7 @@ import os
 from stl import mesh
 from scipy.spatial.transform import Rotation as R
 
-from api.VectorMap import VectorMap, euclidean_distance
+from .VectorMap import VectorMap, euclidean_distance
 
 @dataclass
 class BoxProperties:

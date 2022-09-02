@@ -15,5 +15,5 @@ COPY . ${SOURCE_DIR}
 ENV FLASK_ENV=development
 ENV FLASK_APP=app
 
-WORKDIR ${SOURCE_DIR}/api
+WORKDIR ${SOURCE_DIR}/api/tactil_api
 CMD ["python", "-m", "flask", "run", "--host=0.0.0.0"]
