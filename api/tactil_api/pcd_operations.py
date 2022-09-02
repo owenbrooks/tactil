@@ -2,6 +2,8 @@ import numpy as np
 import open3d as o3d
 import matplotlib.pyplot as plt
 from .typings.o3d_geometry import PointCloud
+from .SuppressStream import SuppressStream
+import sys
 
 # Max vertical threhold
 def vertical_threshold(pcd: PointCloud, threshold_height: float) -> PointCloud:
@@ -31,11 +33,11 @@ def dbscan_cluster(pcd: PointCloud, epsilon: float, min_points: int) -> np.ndarr
         # for an nx3 pcd, labels is nx1 integers, with -1 representing noise points,
         # and positive ints and 0 indicating which cluster a point belongs to
     max_label = labels.max()
-    print(f"Point cloud has {max_label + 1} clusters")
+    cluster_count = max_label + 1
     colors = plt.get_cmap("tab20")(labels / (max_label if max_label > 0 else 1))
     colors[labels < 0] = 0
     pcd.colors = o3d.utility.Vector3dVector(colors[:, :3])
-    return labels
+    return labels, cluster_count
 
 
 # Remove small clusters

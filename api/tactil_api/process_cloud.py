@@ -21,6 +21,7 @@ from scipy import stats
 from scipy.spatial.transform import Rotation as R
 import math
 from typing import Tuple
+from .SuppressStream import SuppressStream
 
 
 def process(
@@ -111,7 +112,7 @@ def remove_nonwall_points(pcd: PointCloud, visualise: bool) -> PointCloud:
     # Perform dbscan clustering and remove small clusters
     min_cluster_size = 20  # points
     rem_small_tic = time.perf_counter()
-    labels = dbscan_cluster(pcd, epsilon=0.5, min_points=20)
+    labels, _ = dbscan_cluster(pcd, epsilon=0.5, min_points=20)
     rem_small_toc = time.perf_counter()
     print(f"Performed clustering in {rem_small_toc-rem_small_tic: 0.4f} seconds")
     if visualise:
@@ -181,11 +182,14 @@ def partition_by_normal_and_density(pcd: PointCloud, labels, visualise: bool) ->
 
     # Separate pcds further using dbscan clustering
     large_normal_clusters = []
+    print("Cluster count: [", end='')
     for norm_clust in normal_clusters:
-        labels = dbscan_cluster(norm_clust, epsilon=0.2, min_points=10)
+        labels, cluster_count = dbscan_cluster(norm_clust, epsilon=0.2, min_points=10)
+        print(f"{cluster_count}, ", end='')
         separated_clusters = separate_pcd_by_labels(norm_clust, labels)
         # remove last label which are "noise" points
         large_normal_clusters += separated_clusters[:-1]
+    print("]")
 
     # Paint point cloud according to cluster
     def paint_pcd_list(pcd_list):
@@ -207,34 +211,36 @@ def fit_models(
     planes = []
     plane_models = []
     remaining_points = []
-    for norm_clust in large_normal_clusters:
-        segments, segment_models, rest = segment_planes(
-            norm_clust,
-            distance_threshold=0.05,
-            num_iterations=1000,
-            verticality_epsilon=0.5,
-            min_plane_size=100,
-            z_index=2,
-        )
+    with SuppressStream(sys.stderr):
+        for norm_clust in large_normal_clusters:
+            segments, segment_models, rest = segment_planes(
+                norm_clust,
+                distance_threshold=0.05,
+                num_iterations=1000,
+                verticality_epsilon=0.5,
+                min_plane_size=100,
+                z_index=2,
+            )
 
-        planes += segments
-        plane_models += segment_models
-        remaining_points.append(rest)
+            planes += segments
+            plane_models += segment_models
+            remaining_points.append(rest)
 
-    line_sets, _ = get_bounding_boxes(planes)
-    # o3d.visualization.draw_geometries(line_sets + planes)
-    # o3d.visualization.draw_geometries(normal_clusters + line_sets + planes + remaining_points)
+        line_sets, _ = get_bounding_boxes(planes)
 
-    # Flatten into 2D
-    def flatten(pcd):
-        points = np.asarray(pcd.points)
-        points[:, 2] = 0.0  # flatten in z direction
-        pcd.points = o3d.utility.Vector3dVector(points)
+        # o3d.visualization.draw_geometries(line_sets + planes)
+        # o3d.visualization.draw_geometries(normal_clusters + line_sets + planes + remaining_points)
 
-    for cloud in planes:
-        flatten(cloud)
+        # Flatten into 2D
+        def flatten(pcd):
+            points = np.asarray(pcd.points)
+            points[:, 2] = 0.0  # flatten in z direction
+            pcd.points = o3d.utility.Vector3dVector(points)
 
-    line_sets, boxes = get_bounding_boxes(planes)
+        for cloud in planes:
+            flatten(cloud)
+
+        line_sets, boxes = get_bounding_boxes(planes)
 
     # Create coordinate frame for visualisation
     origin_frame = o3d.geometry.TriangleMesh.create_coordinate_frame(
