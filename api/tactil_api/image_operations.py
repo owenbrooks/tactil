@@ -42,7 +42,6 @@ def save_image(
     if view_control is None:
         raise RuntimeError("Operating in headless mode: Unable to render point cloud")
 
-    print(view_control)
     view_control.set_zoom(0.4)
 
     # compute real-world image width
