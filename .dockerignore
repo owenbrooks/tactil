@@ -1,6 +1,6 @@
 env
 venv
-*.pcd
+**/*.pcd
 .vscode
 __pycache__
 api/stl_output
