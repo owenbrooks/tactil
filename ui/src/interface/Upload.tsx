@@ -63,7 +63,10 @@ function Upload(props: UploadProps) {
                 }
             }).catch((error: any) => {
                 console.error(error);
-                alert(error);
+                alert("Error: Failed to process scan.");
+                setIsUploading(false);
+                setUploadFinished(false);
+                setIsProcessing(false);
             });
 
 
@@ -76,7 +79,7 @@ function Upload(props: UploadProps) {
                 props.setVectorMap(vectorMap);
                 props.setPcdImageInfo(example_api_response.pcd_image_info);
                 navigate("/edit");
-            } 
+            }
         }
     };
 
@@ -89,37 +92,43 @@ function Upload(props: UploadProps) {
                 setIsProcessing(false);
                 const vectorMap = deserializeVectorMap(response);
                 props.setVectorMap(vectorMap);
-        navigate("/edit")
+                navigate("/edit"); // redirect to edit page
+            }).catch((error: any) => {
+                console.error(error);
+                alert("Error: Failed to upload scan.");
+                setIsUploading(false);
+                setUploadFinished(false);
+                setIsProcessing(false);
             });
         }
     }
 
     return (
         <>
-        <div className='instruction-page'>
-        <h1>Upload</h1>
-        <div className="interface">
-            {(!isUploading && !isProcessing && !uploadFinished) &&
-                <><p>Choose a .pcd file to upload</p>
-                    <input type="file" name="file" onChange={changeHandler} /></>}
-            {((isFilePicked || isDevEnvironment) && !isUploading && !isProcessing && !uploadFinished) && <div>
-                <button onClick={handleSubmission}>Upload</button>
-            </div>}
-            {uploadFinished && !isProcessing && <div>
-                <button onClick={handleProcess}>Process</button>
-            </div>}
-            {isUploading &&
-                <div>
-                    <p> Uploading... </p>
-                    <div className='lds-dual-ring'></div>
-                </div>}
-            {isProcessing &&
-                <div>
-                    <p> Processing... </p>
-                    <div className='lds-dual-ring'></div>
-                </div>}
-        </div>
-        </div>
+            <div className='instruction-page'>
+                <h1>Upload</h1>
+                <div className="interface">
+                    {(!isUploading && !isProcessing && !uploadFinished) &&
+                        <><p>Choose a .pcd file to upload</p>
+                            <input type="file" name="file" onChange={changeHandler} /></>}
+                    {((isFilePicked || isDevEnvironment) && !isUploading && !isProcessing && !uploadFinished) && <div>
+                        <button onClick={handleSubmission}>Upload</button>
+                    </div>}
+                    {uploadFinished && !isProcessing && <div>
+                        <button onClick={handleProcess}>Process</button>
+                    </div>}
+                    {isUploading &&
+                        <div>
+                            <p> Uploading... </p>
+                            <div className='lds-dual-ring'></div>
+                        </div>}
+                    {isProcessing &&
+                        <div>
+                            <p> Processing... </p>
+                            <div className='lds-dual-ring'></div>
+                        </div>}
+                </div>
+            </div>
         </>
     );
 }
