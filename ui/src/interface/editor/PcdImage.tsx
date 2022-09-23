@@ -30,8 +30,6 @@ function PcdImage(props: PcdImageProps) {
     const image_left = 'calc(' + totalOffset.x + 'px + 50%)';
     const image_top = 'calc(' + totalOffset.y + 'px + 50%)';
 
-    console.log(props.imageInfo)
-
     const handleImageError = () => {
         setHasImageError(true);
     }

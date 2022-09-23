@@ -35,7 +35,9 @@ const NODE_RADIUS_PX = 13 / 2; // used for mouse overlap detection and drawing
 
 function Edit(props: EditProps) {
 
-  const initialGraph = vectorMapToGraph(props.vectorMap);
+  const isDebugEnvironment = process.env.REACT_APP_TACTIL_ENV === 'debug';
+  const { vectorMap } = props;
+  const initialGraph = vectorMapToGraph(vectorMap);
   const [
     graphState,
     {
@@ -191,6 +193,49 @@ function Edit(props: EditProps) {
     }
   }
 
+  function handleVectorMapUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    // if a file has been uploaded, parse it and set the VectorMap
+    if (event.target.files?.length) {
+      const fileReader = new FileReader();
+      fileReader.readAsText(event.target.files[0], "UTF-8");
+      fileReader.onload = e => {
+        if (e.target?.result) {
+          let uploadedVectorMap: any = JSON.parse(e.target.result as string); // TODO: handle conversion error
+          // convert features from object to Map type
+          let featureMap = new Map();
+          for (let id in uploadedVectorMap.features) {
+            let feature = uploadedVectorMap.features[id];
+            featureMap.set(parseInt(id), feature);
+          }
+          uploadedVectorMap.features = featureMap;
+
+          setGraph(vectorMapToGraph(uploadedVectorMap));
+          (event.target.value as any) = null;
+        }
+      };
+      fileReader.onerror = e => {
+        console.error(e);
+        alert("Failed to process uploaded file. Ensure you upload a valid .json file.");
+      }
+    }
+  }
+  function saveVectorMap() {
+    if (props.vectorMap) {
+      let features = Object.fromEntries(props.vectorMap.features.entries());
+      let vmap = { edges: [...props.vectorMap.edges], labels: [...props.vectorMap.labels], vertices: [...props.vectorMap.vertices], features: features };
+      let vmapString = JSON.stringify(vmap);
+
+      // Create and downlaod file object (https://thelearning.dev/how-to-download-files-on-button-click-reactjs)
+      const file = new Blob([vmapString], { type: 'text/json' });
+      // Dummy link to trigger the download
+      const element = document.createElement("a");
+      element.href = URL.createObjectURL(file);
+      element.download = "map-" + Date.now() + ".json";
+      // Simulate link click
+      document.body.appendChild(element); // Required for this to work in FireFox
+      element.click();
+    }
+  }
   function handleUndo() {
     undoGraph();
     resetPreviousAddition();
@@ -225,6 +270,16 @@ function Edit(props: EditProps) {
         <div>
           <button onClick={deleteSelectedNodes} disabled={selectedNodes.length === 0}>Delete selected (Del)</button>
         </div>
+        {isDebugEnvironment &&
+          <>
+            <div>
+              <br />
+              Upload map
+              <input type="file" onChange={handleVectorMapUpload} />
+              <button onClick={saveVectorMap}>Save map</button>
+            </div>
+          </>
+        }
         {/* <pre>{JSON.stringify(isDragging)}</pre> */}
       </div>
       <div className='edit-frame' id="edit-frame" ref={editDivRef}

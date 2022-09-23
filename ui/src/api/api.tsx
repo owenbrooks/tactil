@@ -70,7 +70,7 @@ export type Label = {
 
 export const PIXEL_TO_WORLD_FACTOR = 0.1;
 
-type Feature = Vertex | Edge | Label;
+export type Feature = Vertex | Edge | Label;
 
 type VectorMapPython = {
     features: Record<number, Feature>,
