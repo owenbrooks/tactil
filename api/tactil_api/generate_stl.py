@@ -14,7 +14,17 @@ class BoxProperties:
     box_extents: list[np.array] # Nx3 measurements of length/2, width/2, height/2
     box_rotations: list[np.array] # Nx3x3 rotation matrices
 
-def generate(vector_map: VectorMap, visualise: bool, output_folder: pathlib.Path):
+@dataclass
+class PhysicalParameters:
+    """ Class for storing 3D model generation parameters """
+    model_scale_factor: float # e.g. 1/120 scale
+    wall_height_mm: float # e.g. 2.5mm
+    wall_thickness_mm: float # e.g. 2.5mm
+    border_width_mm: float # extra padding (empty area) added to base e.g. 5mm
+    floor_thickness_mm: float # e.g. 5mm
+
+
+def generate(vector_map: VectorMap, model_params: PhysicalParameters, visualise: bool, output_folder: pathlib.Path):
     box_properties = vector_map_to_box_properties(vector_map)
 
     centers_unscaled = np.array(box_properties.box_centers)
@@ -22,12 +32,9 @@ def generate(vector_map: VectorMap, visualise: bool, output_folder: pathlib.Path
     rotations = np.array(box_properties.box_rotations)
 
     # scale dimensions down to model size
-    model_scale_factor = 1/120
     meters_to_mm = 1000
-    # model_scale_factor = 1
-    # meters_to_mm = 1
-    centers = centers_unscaled * model_scale_factor * meters_to_mm
-    extents = extents_unscaled * model_scale_factor * meters_to_mm
+    centers = centers_unscaled * model_params.model_scale_factor * meters_to_mm
+    extents = extents_unscaled * model_params.model_scale_factor * meters_to_mm
 
     # define the 8 vertices of a cube
     cube_vertices = np.array([\
@@ -60,12 +67,10 @@ def generate(vector_map: VectorMap, visualise: bool, output_folder: pathlib.Path
     for center, extent, rot in zip(centers, extents, rotations):
         # scale
         vert = cube_vertices.copy()
-        wall_height = 2.5 # mm
-        vert[:, 2] *= wall_height / 2
-        vert[:, 2] += wall_height / 2
-        wall_thickness = 2.5 # mm
-        extent[1] = wall_thickness # TODO: remove this / make a minimum
-        extent[0] += wall_thickness # to make corners join up nicely
+        vert[:, 2] *= model_params.wall_height_mm / 2
+        vert[:, 2] += model_params.wall_height_mm / 2
+        extent[1] = model_params.wall_thickness_mm # TODO: remove this / make a minimum
+        extent[0] += model_params.wall_thickness_mm # to make corners join up nicely
         vert[:, 0:2] *= extent[0:2]/2 # apply scale in x and y directions
 
         # rotate
@@ -92,29 +97,32 @@ def generate(vector_map: VectorMap, visualise: bool, output_folder: pathlib.Path
 
     # combine boxes into a single large mesh
     walls_mesh = mesh.Mesh(np.concatenate([cube.data for cube in box_meshes]))
+    print(model_params)
+    if model_params.floor_thickness_mm > 0: # only add floor if thickness > 0
+        # create floor mesh on which the walls sit
+        # length and width are defined by the extent of the walls
+        minx, maxx, miny, maxy = walls_mesh.x.min(), walls_mesh.x.max(), walls_mesh.y.min(), walls_mesh.y.max()
+        border_width = model_params.border_width_mm # 5 mm
+        floor_thickness = model_params.floor_thickness_mm # 5 # mm
+        floor_vert = np.array([\
+            [minx-border_width, miny-border_width, -floor_thickness],
+            [maxx+border_width, miny-border_width, -floor_thickness],
+            [maxx+border_width, maxy+border_width, -floor_thickness],
+            [minx-border_width, maxy+border_width, -floor_thickness],
+            [minx-border_width, miny-border_width, 0],
+            [maxx+border_width, miny-border_width, 0],
+            [maxx+border_width, maxy+border_width, 0],
+            [minx-border_width, maxy+border_width, 0]])
 
-    # create floor mesh on which the walls sit
-    # length and width are defined by the extent of the walls
-    minx, maxx, miny, maxy = walls_mesh.x.min(), walls_mesh.x.max(), walls_mesh.y.min(), walls_mesh.y.max() 
-    border_width = 5 # mm
-    floor_thickness = 5 # mm
-    floor_vert = np.array([\
-        [minx-border_width, miny-border_width, -floor_thickness],
-        [maxx+border_width, miny-border_width, -floor_thickness],
-        [maxx+border_width, maxy+border_width, -floor_thickness],
-        [minx-border_width, maxy+border_width, -floor_thickness],
-        [minx-border_width, miny-border_width, 0],
-        [maxx+border_width, miny-border_width, 0],
-        [maxx+border_width, maxy+border_width, 0],
-        [minx-border_width, maxy+border_width, 0]])
+        floor_mesh = mesh.Mesh(np.zeros(cube_faces.shape[0], dtype=mesh.Mesh.dtype))
+        for i, f in enumerate(cube_faces):
+            for j in range(3):
+                floor_mesh.vectors[i][j] = floor_vert[f[j],:]
 
-    floor_mesh = mesh.Mesh(np.zeros(cube_faces.shape[0], dtype=mesh.Mesh.dtype))
-    for i, f in enumerate(cube_faces):
-        for j in range(3):
-            floor_mesh.vectors[i][j] = floor_vert[f[j],:] 
-
-    # combine walls and floor into single mesh to print
-    combined_mesh = mesh.Mesh(np.concatenate([cube.data for cube in box_meshes] + [floor_mesh.data]))
+        # combine walls and floor into single mesh to print
+        combined_mesh = mesh.Mesh(np.concatenate([cube.data for cube in box_meshes] + [floor_mesh.data]))
+    else:
+        combined_mesh = mesh.Mesh(np.concatenate([cube.data for cube in box_meshes]))
 
     # create output directory if it doesn't exist
     if not os.path.exists(output_folder):

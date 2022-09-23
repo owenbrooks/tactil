@@ -1,7 +1,7 @@
 import './Interface.css'
 import { Routes, Route, Navigate } from "react-router-dom";
 import Upload from './Upload';
-import Generate from './Generate';
+import Generate from './generator/Generate';
 import Edit from './editor/Edit';
 import { ImageInfo, VectorMap } from "../api/api";
 import { useState } from 'react';

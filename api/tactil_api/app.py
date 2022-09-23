@@ -1,11 +1,10 @@
-import json
 import os
 from flask import Flask, make_response, request, jsonify, send_file, send_from_directory
 from marshmallow_dataclass import dataclass
 from werkzeug.utils import secure_filename
 from .VectorMap import VectorMap
 from .process_cloud import process
-from .generate_stl import generate
+from .generate_stl import PhysicalParameters, generate
 from flask_cors import CORS
 import secrets
 
@@ -57,6 +56,7 @@ def process_file():
 @dataclass
 class GeneratePayload():
     vector_map: VectorMap
+    model_params: PhysicalParameters
 
 @app.route("/generate", methods=["POST"])
 def generate_model():
@@ -70,7 +70,7 @@ def generate_model():
     generate_payload = GeneratePayload.Schema().load(json_payload)
     print(generate_payload.vector_map)
 
-    generate(generate_payload.vector_map, visualise=False, output_folder=OUTPUT_FOLDER)
+    generate(generate_payload.vector_map, generate_payload.model_params, visualise=False, output_folder=OUTPUT_FOLDER)
 
     resp = jsonify({"message": "File successfully generated"})
     resp.status_code = 200
