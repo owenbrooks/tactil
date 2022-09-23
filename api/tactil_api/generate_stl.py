@@ -64,8 +64,8 @@ def generate(vector_map: VectorMap, visualise: bool, output_folder: pathlib.Path
         vert[:, 2] *= wall_height / 2
         vert[:, 2] += wall_height / 2
         wall_thickness = 2.5 # mm
-        wall_thickness = 2.5 # mm
         extent[1] = wall_thickness # TODO: remove this / make a minimum
+        extent[0] += wall_thickness # to make corners join up nicely
         vert[:, 0:2] *= extent[0:2]/2 # apply scale in x and y directions
 
         # rotate
