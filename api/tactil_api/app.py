@@ -70,7 +70,7 @@ def generate_model():
     generate_payload = GeneratePayload.Schema().load(json_payload)
     print(generate_payload.vector_map)
 
-    generate(generate_payload.vector_map, visualise=False)
+    generate(generate_payload.vector_map, visualise=False, output_folder=OUTPUT_FOLDER)
 
     resp = jsonify({"message": "File successfully generated"})
     resp.status_code = 200

@@ -3,6 +3,7 @@ import numpy as np
 import os
 from stl import mesh
 from scipy.spatial.transform import Rotation as R
+import pathlib
 
 from .VectorMap import VectorMap, euclidean_distance
 
@@ -13,7 +14,7 @@ class BoxProperties:
     box_extents: list[np.array] # Nx3 measurements of length/2, width/2, height/2
     box_rotations: list[np.array] # Nx3x3 rotation matrices
 
-def generate(vector_map: VectorMap, visualise: bool):
+def generate(vector_map: VectorMap, visualise: bool, output_folder: pathlib.Path):
     box_properties = vector_map_to_box_properties(vector_map)
 
     centers_unscaled = np.array(box_properties.box_centers)
@@ -114,7 +115,12 @@ def generate(vector_map: VectorMap, visualise: bool):
 
     # combine walls and floor into single mesh to print
     combined_mesh = mesh.Mesh(np.concatenate([cube.data for cube in box_meshes] + [floor_mesh.data]))
-    file_path = os.path.join('stl_output', 'out.stl')
+
+    # create output directory if it doesn't exist
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder, exist_ok=True)
+
+    file_path = os.path.join(output_folder, 'out.stl')
     combined_mesh.save(file_path)
 
     print(f"Saved STL file in {file_path}")

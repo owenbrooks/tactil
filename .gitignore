@@ -2,7 +2,7 @@ env
 *.pcd
 .vscode
 __pycache__
-api/stl_output
+**/stl_output
 api/pcd_uploads
 output
 image_output
