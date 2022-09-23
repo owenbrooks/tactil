@@ -26,8 +26,11 @@ export type BoxProperties = {
 export type LocationState = {
     boxProperties: BoxProperties,
 };
-
-export async function postData(url = '', data = {}) {
+export async function postDataToApi(path = '', data = {}) {
+    const url = '/api' + path;
+    return postData(url, data)
+}
+async function postData(url = '', data = {}) {
     // Default options are marked with *
     const response = await fetch(url, {
         method: 'POST', // *GET, POST, PUT, DELETE, etc.

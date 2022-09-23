@@ -1,9 +1,9 @@
 import React, { SyntheticEvent, useState } from 'react';
 import './Interface.css'
 import { useNavigate } from "react-router-dom";
-import { ProcessReponse, postData, ImageInfo, VectorMap, deserializeVectorMap } from '../api/api';
-const upload_url = "http://localhost:5000/upload"
-const process_url = "http://localhost:5000/process"
+import { ProcessReponse, ImageInfo, VectorMap, deserializeVectorMap, postDataToApi } from '../api/api';
+const upload_url = "/api/upload"
+const process_url = "/process"
 const example_api_response = require('./example_api_response.json');
 
 type UploadProps = {
@@ -39,15 +39,13 @@ function Upload(props: UploadProps) {
                 method: "POST",
                 body: formData
             }).then((value: Response) => {
-                console.log(value)
                 setIsUploading(false);
                 setUploadFinished(value.ok);
             }).then(() => {
                 if (selectedFile != null) {
                     const data = { "filename": selectedFile.name };
                     setIsProcessing(true);
-                    postData(process_url, data).then((response: ProcessReponse) => {
-                        console.log(response)
+                    postDataToApi(process_url, data).then((response: ProcessReponse) => {
                         setIsProcessing(false);
                         const vectorMap = deserializeVectorMap(response);
                         props.setVectorMap(vectorMap);
@@ -63,7 +61,7 @@ function Upload(props: UploadProps) {
                 }
             }).catch((error: any) => {
                 console.error(error);
-                alert("Error: Failed to process scan.");
+                alert("Error: Failed to upload/process scan.");
                 setIsUploading(false);
                 setUploadFinished(false);
                 setIsProcessing(false);
@@ -87,8 +85,7 @@ function Upload(props: UploadProps) {
         if (selectedFile != null) {
             const data = { "filename": selectedFile.name };
             setIsProcessing(true);
-            postData(process_url, data).then((response: ProcessReponse) => {
-                console.log(response)
+            postDataToApi(process_url, data).then((response: ProcessReponse) => {
                 setIsProcessing(false);
                 const vectorMap = deserializeVectorMap(response);
                 props.setVectorMap(vectorMap);

@@ -128,7 +128,7 @@ def generate(vector_map: VectorMap, model_params: PhysicalParameters, visualise:
     if not os.path.exists(output_folder):
         os.makedirs(output_folder, exist_ok=True)
 
-    file_path = os.path.join(output_folder, 'out.stl')
+    file_path = os.path.join(output_folder, 'model.stl')
     combined_mesh.save(file_path)
 
     print(f"Saved STL file in {file_path}")

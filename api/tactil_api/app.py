@@ -28,7 +28,7 @@ def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-@app.route("/process", methods=["POST"])
+@app.route("/api/process", methods=["POST"])
 def process_file():
     content_type = request.headers.get("Content-Type")
     if content_type == "application/json":
@@ -58,7 +58,7 @@ class GeneratePayload():
     vector_map: VectorMap
     model_params: PhysicalParameters
 
-@app.route("/generate", methods=["POST"])
+@app.route("/api/generate", methods=["POST"])
 def generate_model():
     content_type = request.headers.get("Content-Type")
     if content_type == "application/json":
@@ -77,7 +77,7 @@ def generate_model():
     return resp
 
 
-@app.route("/upload", methods=["POST"])
+@app.route("/api/upload", methods=["POST"])
 def upload_file():
     if request.method == "POST":
         # check if the post request has the file part
@@ -102,16 +102,16 @@ def upload_file():
             return "File type not supported", 400
 
 
-@app.route("/uploads/<name>")
+@app.route("/api/uploads/<name>")
 def download_file(name):
     return send_from_directory(app.config["UPLOAD_FOLDER"], name)
 
 
-@app.route("/image_output/<name>")
+@app.route("/api/image_output/<name>")
 def send_pcd_image(name):
     return send_from_directory(IMAGE_FOLDER, name)
 
 
-@app.route("/generate/output")
+@app.route("/api/generate/output")
 def download_output():
-    return send_from_directory(OUTPUT_FOLDER, "out.stl")
+    return send_from_directory(OUTPUT_FOLDER, "model.stl")

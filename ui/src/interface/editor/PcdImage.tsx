@@ -37,8 +37,9 @@ function PcdImage(props: PcdImageProps) {
     return (
         <>
             {/* <img src={"http://localhost:5000/./image_output/f9fff180-7302-4b2c-9e3f-541d6934cc75.png"} */}
-            {!hasImageError && <img src={"http://localhost:5000/image_output/" + props.imageInfo.filename}
-                onError={handleImageError}
+            {/* {!hasImageError && <img src={"http://localhost:5000/api/image_output/" + props.imageInfo.filename} */}
+            {!hasImageError && <img src={"/api/image_output/" + props.imageInfo.filename}
+            onError={handleImageError}
                 style={{
                     left: image_left,
                     top: image_top,

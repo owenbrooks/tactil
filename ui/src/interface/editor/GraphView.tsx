@@ -31,8 +31,7 @@ function GraphView(props: GraphViewProps) {
             const nodeB = nodes.get(edge[1]);
 
             if (nodeA === undefined || nodeB === undefined) {
-                console.log(edgeId, edge[0], edge[1])
-                console.error("Mismatch between nodes and edges");
+                console.error("Mismatch between nodes and edges", edgeId, edge[0], edge[1]);
                 return null; // early exit
             }
 
