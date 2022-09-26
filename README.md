@@ -18,8 +18,8 @@
 
 ### Requirements
 - Linux (ubuntu/arch)
-- Python 3.9 (`yay -S python39`)
-- pip (`sudo pacman -S python-pip`)
+- Python 3.9 (`yay -S python39` or `sudo apt install python3`)
+- pip (`sudo pacman -S python-pip` or `sudo apt install python3-pip`)
 - virtualenv (`pip install virtualenv`)
 
 ### Environment Setup
