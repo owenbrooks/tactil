@@ -1,67 +1,91 @@
 use pyo3::prelude::*;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
-#[derive(FromPyObject, Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug)]
+#[pyclass]
 pub struct Coord2D {
+    #[pyo3(get, set)]
     pub x: f32,
+    #[pyo3(get, set)]
     pub y: f32,
 }
-
-#[derive(FromPyObject, Debug, Copy, Clone)]
-pub struct Vertex {
-    pub id: usize,
-    pub position: Coord2D,
+#[pymethods]
+impl Coord2D {
+    #[new]
+    fn new(x: f32, y: f32) -> Self {
+        Coord2D { x, y }
+    }
 }
 
-#[derive(FromPyObject, Debug, Copy, Clone)]
-pub struct Edge {
+#[derive(Debug, Copy, Clone)]
+#[pyclass]
+pub struct Vertex {
+    #[pyo3(get, set)]
     pub id: usize,
+    #[pyo3(get, set)]
+    pub position: Coord2D,
+}
+#[pymethods]
+impl Vertex {
+    #[new]
+    fn new(id: usize, position: Coord2D) -> Self {
+        Vertex { id, position }
+    }
+}
+
+
+#[derive(Debug, Copy, Clone)]
+#[pyclass]
+pub struct Edge {
+    #[pyo3(get, set)]
+    pub id: usize,
+    #[pyo3(get, set)]
     pub vertex_id_a: usize,
+    #[pyo3(get, set)]
     pub vertex_id_b: usize,
 }
-
-#[derive(FromPyObject, Debug, Clone)]
-pub struct Label {
-    pub id: usize,
-    pub text: String,
-    pub position: Coord2D,
-    pub size: i32,
-    pub is_braille: bool,
-}
-
-#[derive(FromPyObject, Debug, Clone)]
-pub enum Feature {
-    Label(Label),
-    Vertex(Vertex),
-    Edge(Edge),
+#[pymethods]
+impl Edge {
+    #[new]
+    fn new(id: usize, vertex_id_a: usize, vertex_id_b: usize) -> Self {
+        Edge { id, vertex_id_a, vertex_id_b }
+    }
 }
 
 #[derive(Debug, Clone)]
 #[pyclass]
 pub struct VectorMap {
-    pub features: HashMap<usize, Feature>,
-    pub vertices: HashSet<usize>,
-    pub edges: HashSet<usize>,
-    pub labels: HashSet<usize>,
+    #[pyo3(get, set)]
+    pub vertices: HashMap<usize, Vertex>,
+    #[pyo3(get, set)]
+    pub edges: HashMap<usize, Edge>,
+}
+#[pymethods]
+impl VectorMap {
+    #[new]
+    fn new(vertices: HashMap<usize, Vertex>, edges: HashMap<usize, Edge>) -> Self {
+        VectorMap { vertices, edges }
+    }
 }
 
 impl VectorMap {
     pub fn add_vertex(&mut self, position: &Coord2D) {
-        let new_id = self.features.len() + 1;
-        let new_vertex = Feature::Vertex(Vertex {
+        let new_id = self.vertices.len() + self.edges.len() + 1;
+        let new_vertex = Vertex {
             id: new_id,
             position: *position,
-        });
-        self.features.insert(new_id, new_vertex);
-        self.vertices.insert(new_id);
+        };
+        self.vertices.insert(new_id, new_vertex);
     }
     pub fn remove_vertex(&mut self, id: usize) {
         self.vertices.remove(&id);
     }
     pub fn add_edge(&mut self, vertex_id_a: usize, vertex_id_b: usize) {
-        let new_id = self.features.len() + 1;
+        let new_id = self.vertices.len() + self.edges.len() + 1;
 
-        if !self.vertices.contains(&vertex_id_a) || !self.vertices.contains(&vertex_id_b) {
+        if matches!(self.vertices.get(&vertex_id_a), None)
+            || matches!(self.vertices.get(&vertex_id_b), None)
+        {
             panic!("Attempt to add an edge between nodes that don't exist");
         }
 
@@ -70,23 +94,22 @@ impl VectorMap {
             return;
         }
 
-        let new_edge = Feature::Edge(Edge {
+        let new_edge = Edge {
             id: new_id,
             vertex_id_a,
             vertex_id_b,
-        });
-        self.features.insert(new_id, new_edge);
-        self.edges.insert(new_id);
+        };
+        self.edges.insert(new_id, new_edge);
     }
     pub fn edge_exists(&self, vertex_id_a: usize, vertex_id_b: usize) -> bool {
-        if !self.vertices.contains(&vertex_id_a) || !self.vertices.contains(&vertex_id_b) {
+        if matches!(self.vertices.get(&vertex_id_a), None)
+            || matches!(self.vertices.get(&vertex_id_b), None)
+        {
             false
         } else {
-            for &edge_id in &self.edges {
-                if let Some(edge) = self.get_edge(edge_id) {
-                    if edge.vertex_id_a == vertex_id_a && edge.vertex_id_b == vertex_id_b {
-                        return true;
-                    }
+            for (&_, &edge) in &self.edges {
+                if edge.vertex_id_a == vertex_id_a && edge.vertex_id_b == vertex_id_b {
+                    return true;
                 }
             }
             false
@@ -94,21 +117,5 @@ impl VectorMap {
     }
     pub fn remove_edge(&mut self, id: usize) {
         self.edges.remove(&id);
-    }
-
-    pub fn get_edge(&self, id: usize) -> Option<Edge> {
-        let feat = self.features.get(&id);
-        if let Some(Feature::Edge(edge)) = feat {
-            return Some(*edge);
-        }
-        None
-    }
-
-    pub fn get_vertex(&self, id: usize) -> Option<Vertex> {
-        let feat = self.features.get(&id);
-        if let Some(Feature::Vertex(vert)) = feat {
-            return Some(*vert);
-        }
-        None
     }
 }

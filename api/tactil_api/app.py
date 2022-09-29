@@ -1,12 +1,15 @@
+from heapq import merge
 import os
 from flask import Flask, make_response, request, jsonify, send_file, send_from_directory
 from marshmallow_dataclass import dataclass
 from werkzeug.utils import secure_filename
-from .VectorMap import VectorMap
+from .VectorMap import VectorMap, fromBasic, toBasic
 from .process_cloud import process
 from .generate_stl import PhysicalParameters, generate
 from flask_cors import CORS
 import secrets
+import math
+from tactil_rs import merge_near_vertices, orthogonalize_map
 
 UPLOAD_FOLDER = "./pcd_uploads"
 ALLOWED_EXTENSIONS = {"txt", "pdf", "png", "jpg", "jpeg", "gif", "pcd", "xyz"}
@@ -42,6 +45,11 @@ def process_file():
     vector_map, image_info = process(
         cloud_path, IMAGE_FOLDER, visualise=False
     )
+
+    basic_vector_map = toBasic(vector_map)
+    # simplified = merge_near_vertices(basic_vector_map, 0.2)
+    orthogonalized = orthogonalize_map(basic_vector_map, math.pi/6)
+    vector_map = fromBasic(orthogonalized)
 
     resp = jsonify(
         {

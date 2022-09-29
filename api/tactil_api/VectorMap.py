@@ -3,6 +3,8 @@ from marshmallow_dataclass import dataclass
 from math import sqrt
 from typing import Dict, Union
 import numpy as np
+import tactil_rs
+from tactil_rs import VectorMap as BasicVectorMap
 
 @dataclass
 class Coord2D:
@@ -88,3 +90,37 @@ class VectorMap:
 
 def euclidean_distance(coord_a: Coord2D, coord_b: Coord2D) -> float:
     return sqrt((coord_a.x-coord_b.x)**2 + (coord_a.y-coord_b.y)**2)
+
+# Used for simpler interoperation with rust code
+# @dataclass
+# class BasicVectorMap:
+#     vertices: Dict[int, Vertex]
+#     edges: Dict[int, Vertex]
+
+def toBasic(vmap: VectorMap) -> BasicVectorMap:
+    vertices = {}
+    for id in vmap.vertices:
+        v_orig = vmap.features[id]
+        v_new = tactil_rs.Vertex(v_orig.id, tactil_rs.Coord2D(v_orig.position.x, v_orig.position.y))
+        vertices[id] = v_new
+    edges = {}
+    for id in vmap.edges:
+        e_orig = vmap.features[id]
+        e_new = tactil_rs.Edge(e_orig.id, e_orig.vertex_id_a, e_orig.vertex_id_b)
+        edges[id] = e_new
+
+    return tactil_rs.VectorMap(vertices, edges)
+
+def fromBasic(vmap: BasicVectorMap) -> VectorMap:
+    features = {}
+    vertex_ids = []
+    edge_ids = []
+    label_ids = []
+    for id, vertex in vmap.vertices.items():
+        vertex_ids += [id]
+        features[id] = Vertex(vertex.id, Coord2D(vertex.position.x, vertex.position.y))
+    for id, edge in vmap.edges.items():
+        edge_ids += [id]
+        features[id] = Edge(edge.id, edge.vertex_id_a, edge.vertex_id_b)
+    
+    return VectorMap(features, vertex_ids, edge_ids, label_ids)

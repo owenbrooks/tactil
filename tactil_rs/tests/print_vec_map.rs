@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::collections::HashSet;
 use tactil_rs::print_vec_map;
 use tactil_rs::vector_map::*;
 
@@ -23,10 +22,8 @@ fn can_draw_map() -> () {
     };
     
     let mut vmap = VectorMap {
-        features: HashMap::new(),
-        vertices: HashSet::new(),
-        edges: HashSet::new(),
-        labels: HashSet::new(),
+        vertices: HashMap::new(),
+        edges: HashMap::new(),
     };
     vmap.add_vertex(&vec1.position);
     vmap.add_vertex(&vec2.position);
