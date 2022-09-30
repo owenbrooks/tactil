@@ -53,7 +53,7 @@ function Generate(props: GenerateProps) {
     const scaleInput = parseFloat(e.target.value);
     if (scaleInput !== 0) {
       const scaleFactor = 1 / scaleInput;
-      if (scaleFactor !== null && !isNaN(scaleFactor)) {
+      if (scaleFactor !== null && !isNaN(scaleFactor) && scaleFactor > 0) {
         setModelParams({
           ...modelParams,
           model_scale_factor: scaleFactor,
@@ -104,31 +104,31 @@ function Generate(props: GenerateProps) {
       <div>
         Scale Factor
         <br />
-        <input type="number" onChange={handleScaleChange} />:1
+        <input type="number" onChange={handleScaleChange} value={1/modelParams.model_scale_factor} />:1
       </div>
       <br />
       <div>
         Wall Height
         <br />
-        <input type="number" onChange={handleWallHeightChange} />mm
+        <input type="number" onChange={handleWallHeightChange} value={modelParams.wall_height_mm} />mm
       </div>
       <br />
       <div>
         Wall Thickness
         <br />
-        <input type="number" onChange={handleWallThicknessChange} />mm
+        <input type="number" onChange={handleWallThicknessChange} value={modelParams.wall_thickness_mm} />mm
       </div>
       <br />
       <div>
         Border Width
         <br />
-        <input type="number" onChange={handleBorderWidthChange} />mm
+        <input type="number" onChange={handleBorderWidthChange} value={modelParams.border_width_mm} />mm
       </div>
       <br />
       <div>
         Floor Thickness
         <br />
-        <input type="number" onChange={handleFloorThicknessChange} />mm
+        <input type="number" onChange={handleFloorThicknessChange} value={modelParams.floor_thickness_mm} />mm
       </div>
       <br />
       <div>
