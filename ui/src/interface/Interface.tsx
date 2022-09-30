@@ -6,7 +6,7 @@ import Edit from './editor/Edit';
 import { ImageInfo, VectorMap } from "../api/api";
 import { useState } from 'react';
 import Home from './Home';
-import Scan from './Scan';
+import Scan from './scan/Scan';
 
 function Interface() {
 
