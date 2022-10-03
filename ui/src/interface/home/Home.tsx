@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import './Home.css'
 import model from './example-model.jpg';
-import edit from './example-edit.png';
-import pointcloud from './example-pointcloud.png';
+import edit from './example-edit.jpg';
+import pointcloud from './example-pointcloud.jpg';
 import scan from '../scan/scan_mode.jpg'
 
 const imageStyle = {
