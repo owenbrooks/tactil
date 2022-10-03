@@ -5,7 +5,7 @@ import Generate from './generator/Generate';
 import Edit from './editor/Edit';
 import { ImageInfo, VectorMap } from "../api/api";
 import { useState } from 'react';
-import Home from './Home';
+import Home from './home/Home';
 import Scan from './scan/Scan';
 
 function Interface() {

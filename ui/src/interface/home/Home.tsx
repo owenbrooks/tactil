@@ -1,5 +1,14 @@
 import { Link } from 'react-router-dom';
 import './Home.css'
+import model from './example-model.jpg';
+import edit from './example-edit.png';
+import pointcloud from './example-pointcloud.png';
+import scan from '../scan/scan_mode.jpg'
+
+const imageStyle = {
+  width: '20%',
+  margin: '20px'
+};
 
 function Home() {
 
@@ -18,6 +27,12 @@ function Home() {
         <Link to="/scan">Go to Step 1: Take a scan</Link>
         {/* <button onClick={handleGenerate}>Generate</button> */}
       </div>
+      <div>
+      <img src={scan} style={imageStyle} />
+      <img src={pointcloud} style={imageStyle} />
+      <img src={edit} style={imageStyle} />
+      <img src={model} style={imageStyle} />
+        </div>
       <br />
     </div>
   );

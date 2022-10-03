@@ -1,4 +1,4 @@
-import '../Home.css'
+import '../home/Home.css'
 import scan_mode from './scan_mode.jpg'
 import medium from './medium.jpg'
 import pointcloud from './pointcloud.jpg'
