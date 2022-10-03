@@ -1,6 +1,6 @@
 # Final Year Project: Automated 3D-printed map generation
 
-![Screenshot of filtered point cloud](assets/screenshot.png)
+![Left: LiDAR scan of an apartment, Center: Dots joined by lines in the shape of the apartment walls, Right: 3D print of the apartment walls](assets/scan-edit-print.jpg)
 
 # Getting started
 ## Option 1: Running in docker
@@ -12,7 +12,7 @@
 1. `git clone git@github.com:owenbrooks/fyp.git`
 2. `cd fyp/docker`
 3. `docker-compose up`
-4. Go to [http://127.0.0.1:3000](http://127.0.0.1:3000)
+4. Go to [http://127.0.0.1](http://127.0.0.1)
 
 ## Option 2: Building from source
 
