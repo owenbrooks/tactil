@@ -28,10 +28,10 @@ function Home() {
         {/* <button onClick={handleGenerate}>Generate</button> */}
       </div>
       <div>
-      <img src={scan} style={imageStyle} />
-      <img src={pointcloud} style={imageStyle} />
-      <img src={edit} style={imageStyle} />
-      <img src={model} style={imageStyle} />
+      <img src={scan} style={imageStyle} alt="iPad lidar scanning app screenshot" />
+      <img src={pointcloud} style={imageStyle} alt="Point cloud of apartment" />
+      <img src={edit} style={imageStyle} alt="Editing view of tactile map" />
+      <img src={model} style={imageStyle} alt="3D-printed model of apartment walls" />
         </div>
       <br />
     </div>

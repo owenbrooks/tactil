@@ -11,10 +11,10 @@ import { useDragGraph, findHoveredIds } from './useDrag';
 import { useSelected } from './useSelected';
 import useEventListener from './useEventListener';
 import useUndo from './useUndo';
-import AddLabel from './AddLabel';
 import LabelView from './LabelView';
 import useLabels from './useLabels';
-import Help from './Help';
+// import AddLabel from './AddLabel';
+// import Help from './Help';
 
 type EditProps = {
   vectorMap: VectorMap | undefined,

@@ -5,6 +5,7 @@ venv
 __pycache__
 api/stl_output
 api/pcd_uploads
+pointclouds
 output
 image_output
 ui/node_modules
