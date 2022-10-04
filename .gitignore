@@ -4,6 +4,7 @@ env
 __pycache__
 **/stl_output
 api/pcd_uploads
+pointclouds
 output
 image_output
 target
