@@ -1,9 +1,7 @@
 import React, { SyntheticEvent, useState } from 'react';
 import './Interface.css'
 import { useNavigate } from "react-router-dom";
-import { ProcessReponse, ImageInfo, VectorMap, deserializeVectorMap, postDataToApi } from '../api/api';
-const upload_url = "/api/upload"
-const process_url = "/process"
+import { ProcessReponse, ImageInfo, VectorMap, deserializeVectorMap, postData, upload_url, process_url } from '../api/api';
 const example_api_response = require('./example_api_response.json');
 
 type UploadProps = {
@@ -45,7 +43,7 @@ function Upload(props: UploadProps) {
                 if (selectedFile != null) {
                     const data = { "filename": selectedFile.name };
                     setIsProcessing(true);
-                    postDataToApi(process_url, data).then((response: ProcessReponse) => {
+                    postData(process_url, data).then((response: ProcessReponse) => {
                         setIsProcessing(false);
                         const vectorMap = deserializeVectorMap(response);
                         props.setVectorMap(vectorMap);
@@ -85,7 +83,7 @@ function Upload(props: UploadProps) {
         if (selectedFile != null) {
             const data = { "filename": selectedFile.name };
             setIsProcessing(true);
-            postDataToApi(process_url, data).then((response: ProcessReponse) => {
+            postData(process_url, data).then((response: ProcessReponse) => {
                 setIsProcessing(false);
                 const vectorMap = deserializeVectorMap(response);
                 props.setVectorMap(vectorMap);
