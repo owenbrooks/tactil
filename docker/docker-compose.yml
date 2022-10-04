@@ -10,13 +10,12 @@ services:
       - "5000:5000"
     volumes:
       - ../:/tactil:rw
-  ui:
-    container_name: tactil_ui
+  nginx:
+    depends_on:
+      - api
+    restart: always
     build:
+      dockerfile: docker/nginx/Dockerfile
       context: ..
-      dockerfile: docker/Dockerfile.ui
-    image: ghcr.io/owenbrooks/tactil-ui
     ports:
-      - "80:3000"
-    volumes:
-      - ../ui/src/:/tactil/ui/src:rw
+      - "80:80"
