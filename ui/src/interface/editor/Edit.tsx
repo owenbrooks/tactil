@@ -54,6 +54,12 @@ function Edit(props: EditProps) {
   // Keyboard state
   const [controlHeld, setControlHeld] = useState(false);
 
+  const [showBackgroundImage, setShowBackgroundImage] = useState(true);
+
+  function toggleBackgroundImage() {
+    setShowBackgroundImage(!showBackgroundImage);
+  }
+
   // Zooming, panning and mouse variables
   const editDivRef = useRef<HTMLDivElement>(null); // used to enable and disable zoom controls / scrolling
   const defaultZoom = 2.0;
@@ -191,6 +197,8 @@ function Edit(props: EditProps) {
         selectAllNodes();
         e.preventDefault();
       }
+    } else if (e.key === 'h' && e.type === 'keydown') {
+      toggleBackgroundImage();
     }
   }
 
@@ -262,14 +270,14 @@ function Edit(props: EditProps) {
           <button onClick={startAdding} disabled={editorMode === EditorMode.AddNode}>Add/extend wall (N)</button>
           <button onClick={stopAdding} disabled={editorMode === EditorMode.Edit}>Stop extending (N)</button>
         </div>
-        <div>
+        {/* <div>
           <AddLabel graph={graph} setGraph={setGraph} />
-          {/* <input></input><br/>
-          <button>Add as text</button>
-          <button>Add as braille</button> */}
-        </div>
+        </div> */}
         <div>
           <button onClick={deleteSelectedNodes} disabled={selectedNodes.length === 0}>Delete selected (Del)</button>
+        </div>
+        <div>
+          <button onClick={toggleBackgroundImage}>{showBackgroundImage ? "Hide background image (H)" : "Show background image (H)"}</button>
         </div>
         {isDebugEnvironment &&
           <>
@@ -292,7 +300,7 @@ function Edit(props: EditProps) {
         onMouseEnter={handleMouseEnter}
       >
         <>
-          {props.pcdImageInfo &&
+          {props.pcdImageInfo && showBackgroundImage &&
             <PcdImage zoomLevel={zoomLevel} panOffset={combinedPanOffset} imageInfo={props.pcdImageInfo} />
           }
           <GraphView
@@ -314,7 +322,7 @@ function Edit(props: EditProps) {
             labelsHandleMouseUp={labelsHandleMouseUp}
           />
           <ScaleBar zoomLevel={zoomLevel} />
-          <Help />
+          {/* <Help /> */}
         </>
       </div>
     </div>
