@@ -34,7 +34,7 @@ function ScaleBar(props: ScaleMarkerProps) {
                     <line x1="0" y1="0" x2={scalebar_pixel_width} y2="0" stroke="#006462" strokeWidth={strokeThickness} />
                     <line x1="0" y1={-strokeThickness / 2} x2="0" y2={height} stroke="#006462" strokeWidth={strokeThickness} />
                 </svg>
-                <span style={{position: 'absolute', right: strokeThickness, fontSize: height, color: '#006462'}}>
+                <span style={{position: 'absolute', top: strokeThickness/2, right: strokeThickness, fontSize: height, color: '#006462'}}>
                     {world_width}m
                 </span>
             </div>
