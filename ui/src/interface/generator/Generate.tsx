@@ -1,7 +1,5 @@
 import { SyntheticEvent, useState } from 'react';
-import { postDataToApi, serializeVectorMap, VectorMap } from '../../api/api';
-const generateUrl = "/generate";
-const outputUrl = "/api/generate/output";
+import { postData, serializeVectorMap, VectorMap, generateUrl, outputUrl } from '../../api/api';
 
 type GenerateProps = {
   vectorMap: VectorMap | undefined,
@@ -29,7 +27,7 @@ function Generate(props: GenerateProps) {
   const handleGenerate = (_: SyntheticEvent) => {
     if (props.vectorMap !== undefined) {
       const generatePayload = { "vector_map": serializeVectorMap(props.vectorMap), "model_params": modelParams };
-      postDataToApi(generateUrl, generatePayload).then(_ => {
+      postData(generateUrl, generatePayload).then(_ => {
         // Automatically download file when it is ready
         fetch(outputUrl).then((response) => {
           response.blob().then((blob) => {
