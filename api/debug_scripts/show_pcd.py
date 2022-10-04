@@ -6,6 +6,6 @@ pcd_path = sys.argv[1]
 print(pcd_path)
 pcd = o3d.io.read_point_cloud(pcd_path)
 
-pcd = vertical_threshold(pcd, 2.0)
+pcd = vertical_threshold(pcd, 1.0)
 
 o3d.visualization.draw_geometries([pcd])

@@ -21,7 +21,7 @@ function Scan() {
           <li>Press the red button to begin scanning</li>
           <li>Make your way around the room until all the walls have been scanned</li>
         </ol>
-        <img src={scan_mode} style={imageStyle} />
+        <img src={scan_mode} style={imageStyle} alt="Scan mode selection screenshot" />
       </div>
       <div>
         <ol start={6}>
@@ -29,20 +29,20 @@ function Scan() {
           <li>Choose "Medium" process mode</li>
           <li>Press "Start" and wait for the scan to be processed</li>
         </ol>
-        <img src={medium} style={imageStyle} />
+        <img src={medium} style={imageStyle} alt="Process quality selection screenshot" />
       </div>
       <h2>Sending scan to computer</h2>
       <div>
         <ol>
           <li>Press the blue "Share" button</li>
         </ol>
-        <img src={share_button} style={imageStyle} />
+        <img src={share_button} style={imageStyle} alt="Share button screenshot" />
       </div>
       <div>
         <ol start={2}>
           <li>Choose "Point Cloud"</li>
         </ol>
-        <img src={pointcloud} style={imageStyle} />
+        <img src={pointcloud} style={imageStyle} alt="Export type screenshot" />
       </div>
       <div>
         <ol start={3}>
@@ -50,7 +50,7 @@ function Scan() {
           <li>Choose "Low Density"</li>
           <li>Choose "PCD"</li>
         </ol>
-        <img src={low_pcd_zup} style={imageStyle} />
+        <img src={low_pcd_zup} style={imageStyle} alt="Pointcloud export parameters screenshot" />
       </div>
       <div>
         <ol start={6}>
