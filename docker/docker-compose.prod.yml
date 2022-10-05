@@ -10,6 +10,11 @@ services:
       - "5000:5000"
     volumes:
       - ../:/tactil:rw
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    devices:
+      - /dev/dri:/dev/dri
+    environment:
+      - DISPLAY=$DISPLAY
   ui:
     container_name: tactil_ui
     depends_on:
