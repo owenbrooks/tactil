@@ -19,6 +19,8 @@ jobs:
             image: ghcr.io/owenbrooks/tactil-api
           - dockerfile: ./docker/Dockerfile.ui
             image: ghcr.io/owenbrooks/tactil-ui
+          - dockerfile: ./docker/nginx/Dockerfile
+            image: ghcr.io/owenbrooks/tactil-ui-prod
     permissions:
       contents: read
       packages: write
