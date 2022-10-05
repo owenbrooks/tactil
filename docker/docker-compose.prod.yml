@@ -18,5 +18,6 @@ services:
     build:
       dockerfile: docker/nginx/Dockerfile
       context: ..
+    image: ghcr.io/owenbrooks/tactil-ui-prod
     ports:
       - "80:80"
