@@ -12,8 +12,11 @@ export default function useAddNode(
     viewState: ViewState,
     hoveredNodes: number[],
 ) {
+    function getNewId() {
+        return Math.max(0, Math.max(...graph.nodes.keys(), ...graph.edges.keys()) + 1);
+    }
     const [prevNodeId, setPrevNodeId] = useState<number | undefined>();
-    const unplacedId = Math.max(0, Math.max(...graph.nodes.keys(), ...graph.edges.keys()) + 1);
+    const unplacedId = getNewId();
     const unplacedCoord = pixelToWorld(mousePos, viewState.panOffset, viewState.zoomLevel);
 
     function resetPreviousAddition() {
@@ -47,8 +50,8 @@ export default function useAddNode(
             if (prevNodeId !== undefined) {
                 // add edge between prev and hovered
                 const newEdges = new Map(graph.edges);
-                const maxEdgeId = Math.max(0, Math.max(...graph.edges.keys()) + 1);
-                newEdges.set(maxEdgeId, [hovered, prevNodeId]);
+                const newId = getNewId();
+                newEdges.set(newId, [hovered, prevNodeId]);
                 const newGraph = { nodes: graph.nodes, edges: newEdges, labels: [...graph.labels] };
                 setGraph(newGraph);
             }
@@ -64,8 +67,8 @@ export default function useAddNode(
     // add edge between unplaced and prev placed if exists
     const edgesWithUnplaced = new Map(graph.edges);
     if (prevNodeId !== undefined && editorMode === EditorMode.AddNode) {
-        const maxEdgeId = Math.max(...graph.edges.keys()) + 1;
-        edgesWithUnplaced.set(maxEdgeId, [unplacedId, prevNodeId]);
+        const newId = getNewId();
+        edgesWithUnplaced.set(newId, [unplacedId, prevNodeId]);
     }
     const graphWithUnplaced = { nodes: nodesWithUnplaced, edges: edgesWithUnplaced, labels: [...graph.labels] };
 
