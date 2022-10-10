@@ -13,5 +13,5 @@ RUN npm run build
 
 # Serve using nginx
 FROM nginx:stable as server
-COPY --from=builder /tactil/ui/build /var/www/html
+COPY --from=builder /tactil/ui/build /var/www/html/tactil
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
