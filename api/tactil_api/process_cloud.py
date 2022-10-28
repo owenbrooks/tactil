@@ -16,7 +16,7 @@ from .pcd_operations import (
     separate_pcd_by_labels,
     vertical_threshold,
 )
-from .image_operations import Coordinate, Dimensions, ImageInfo, save_image
+from .image_operations import ImageInfo, save_image
 from scipy import stats
 from scipy.spatial.transform import Rotation as R
 import math
@@ -32,7 +32,10 @@ def process(
 ) -> Tuple[VectorMap, ImageInfo]:
     # o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Error)
     pcd = read_cloud(pcd_path, z_index)
-    pcd = vertical_threshold(pcd, threshold_height=2.2)  # Remove roof
+    if visualise:
+        print("Pre-vertical threshold.")
+        o3d.visualization.draw_geometries([pcd])
+    pcd = vertical_threshold(pcd, threshold_height=0.5)  # Remove roof
     downsampled_for_display = create_display_pcd(pcd, visualise)
     pcd = remove_nonwall_points(pcd, visualise)
     unit_normals, labels = cluster_by_normal(pcd)
@@ -79,6 +82,10 @@ def read_cloud(
 
 
 def create_display_pcd(pcd: PointCloud, visualise: bool) -> PointCloud:
+    if visualise:
+        print("Pre-downsampling")
+        o3d.visualization.draw_geometries([pcd])
+
     # Display downsampled pcd with roof removed
     downsampled_for_display = pcd.voxel_down_sample(voxel_size=0.1)
     # Create coordinate frame for visualisation
@@ -86,6 +93,7 @@ def create_display_pcd(pcd: PointCloud, visualise: bool) -> PointCloud:
         size=0.6, origin=[0, 0, 0]
     )
     if visualise:
+        print("Post-downsampling")
         o3d.visualization.draw_geometries([downsampled_for_display, origin_frame])
 
     return downsampled_for_display
