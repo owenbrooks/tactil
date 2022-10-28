@@ -79,38 +79,19 @@ function Upload(props: UploadProps) {
         }
     };
 
-    const handleProcess = (_: SyntheticEvent) => {
-        if (selectedFile != null) {
-            const data = { "filename": selectedFile.name };
-            setIsProcessing(true);
-            postData(process_url, data).then((response: ProcessReponse) => {
-                setIsProcessing(false);
-                const vectorMap = deserializeVectorMap(response);
-                props.setVectorMap(vectorMap);
-                navigate("/edit"); // redirect to edit page
-            }).catch((error: any) => {
-                console.error(error);
-                alert("Error: Failed to upload scan.");
-                setIsUploading(false);
-                setUploadFinished(false);
-                setIsProcessing(false);
-            });
-        }
-    }
-
     return (
         <>
             <div className='instruction-page'>
                 <h1>Upload</h1>
                 <div className="interface">
+                    <div className='border-dashed border-black border-2 background-red underline'>
+                        Upload file here
+                    </div>
                     {(!isUploading && !isProcessing && !uploadFinished) &&
                         <><p>Choose a .pcd file to upload</p>
                             <input type="file" name="file" onChange={changeHandler} /></>}
                     {((isFilePicked || isDevEnvironment) && !isUploading && !isProcessing && !uploadFinished) && <div>
                         <button onClick={handleSubmission}>Upload</button>
-                    </div>}
-                    {uploadFinished && !isProcessing && <div>
-                        <button onClick={handleProcess}>Process</button>
                     </div>}
                     {isUploading &&
                         <div>
