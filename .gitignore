@@ -4,9 +4,11 @@ env
 __pycache__
 **/stl_output
 api/pcd_uploads
+pcd_uploads
 pointclouds
 output
 image_output
 target
 venv
 *.egg-info
+fyp_video
