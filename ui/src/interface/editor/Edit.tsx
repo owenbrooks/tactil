@@ -256,8 +256,8 @@ function Edit(props: EditProps) {
 
   return (
     <div className="edit-container">
-      <div className='edit-params'>
-        <p>Edit</p>
+      <div className='edit-params text-center'>
+        <h1 className='text-left px-12'>Edit</h1>
         <div>
           <button onClick={() => { resetZoomLevel(); }}>Reset zoom</button>
           <button onClick={() => { resetPanOffset(); }}>Reset pan</button>

@@ -10,7 +10,8 @@ function Scan() {
   const imageStyle = { width: '40%', marginLeft: 'auto', marginRight: 'auto', display: 'block', border: '2px solid black'};
 
   return (
-    <div className="instruction-page">
+    // <div className="instruction-page">
+            <div className="instruction-page px-4 md:px-12">
       <h1>Taking a Scan</h1>
       <p>Scans can be created using the <a href="https://apps.apple.com/us/app/3d-scanner-app/id1419913995">3D Scanner App</a> on an iOS device with a LiDAR sensor (iPhone 12/13 Pro, iPad Pro 2020 or newer).</p>
       <div>

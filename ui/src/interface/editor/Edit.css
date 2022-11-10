@@ -10,21 +10,14 @@
   border-radius: 8px;
   position: relative;
   overflow: hidden;
-  user-select: none; /* prevent missing mouse up because text selection was being triggered */
+  user-select: none;
+  /* prevent missing mouse up because text selection was being triggered */
 }
 
 .edit-params button {
   /* display: block; */
   margin: 10px;
   margin-top: 20px;
-}
-
-.edit-params {
-  text-align: center;
-  margin: 10px;
-}
-.edit-params p {
-  text-align: center;
 }
 
 .node {
@@ -40,6 +33,7 @@
   z-index: 10;
   cursor: pointer;
 }
+
 .node:focus {
   background-color: #018381;
   border: 2px solid #018381;
@@ -50,6 +44,7 @@
 .edge {
   pointer-events: none;
 }
+
 .edge:hover {
   background-color: #018381;
 }
@@ -66,7 +61,8 @@
 }
 
 .label {
-  white-space:nowrap; /* prevent text wrapping */
+  white-space: nowrap;
+  /* prevent text wrapping */
 }
 
 .label:hover {
