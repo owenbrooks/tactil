@@ -1,6 +1,9 @@
-# Final Year Project: Automated 3D-printed map generation
+# Final Year Project: Automated Generation of 3D Printed Maps
 
-![Left: LiDAR scan of an apartment, Center: Dots joined by lines in the shape of the apartment walls, Right: 3D print of the apartment walls](assets/scan-edit-print.jpg)
+<!--![Left: LiDAR scan of an apartment, Center: Dots joined by lines in the shape of the apartment walls, Right: 3D print of the apartment walls](assets/scan-edit-print.jpg)-->
+
+![Final Year Project Poster](https://user-images.githubusercontent.com/7232997/233066670-83a59a43-274b-4421-9a8b-a7f7022be86e.png)
+
 
 # Getting started
 ## Option 1: Running in docker
@@ -22,7 +25,7 @@
 - pip (`sudo pacman -S python-pip`)
 - virtualenv (`pip install virtualenv`)
 - nodejs (`sudo pacman -S nodejs` / `sudo apt install nodejs`)
-- npm (/ `sudo apt install npm`)
+- npm (`sudo apt install npm`)
 
 ### Environment Setup
 1. `git clone https://github.com/owenbrooks/fyp.git && cd fyp`
