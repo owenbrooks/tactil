@@ -12,3 +12,4 @@ target
 venv
 *.egg-info
 fyp_video
+.DS_Store

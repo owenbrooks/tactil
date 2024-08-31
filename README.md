@@ -12,8 +12,8 @@
 - On linux systems, make sure [Docker Compose](https://docs.docker.com/compose/install/) is installed.
 
 ### Run the application
-1. `git clone git@github.com:owenbrooks/fyp.git`
-2. `cd fyp/docker`
+1. `git clone git@github.com:owenbrooks/tactil.git`
+2. `cd tactil/docker`
 3. `docker-compose up`
 4. Go to [http://127.0.0.1](http://127.0.0.1)
 
@@ -28,7 +28,7 @@
 - npm (`sudo apt install npm`)
 
 ### Environment Setup
-1. `git clone https://github.com/owenbrooks/fyp.git && cd fyp`
+1. `git clone https://github.com/owenbrooks/tactil.git && cd tactil`
 2. `python -m virtualenv --python=/usr/bin/python3.9 venv`
 3. `source venv/bin/activate`
 4. `pip install -r requirements.txt`
