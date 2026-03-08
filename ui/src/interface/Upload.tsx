@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import './Interface.css'
 import { useNavigate } from "react-router-dom";
 import { ProcessReponse, ImageInfo, VectorMap, deserializeVectorMap, postData, upload_url, process_url } from '../api/api';
-const example_api_response = require('./example_api_response.json');
+import example_api_response from './example_api_response.json';
 
 type UploadProps = {
     setVectorMap: React.Dispatch<React.SetStateAction<VectorMap | undefined>>,
@@ -13,7 +13,7 @@ function Upload(props: UploadProps) {
     const [isUploading, setIsUploading] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const navigate = useNavigate();
-    const isDevEnvironment = process.env.NODE_ENV === 'development';
+    // const isDevEnvironment = process.env.NODE_ENV === 'development';
     const [isDragging, setDragging] = useState(false);
 
     const changeHandler = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,12 +62,12 @@ function Upload(props: UploadProps) {
             console.error("No file selected.");
             alert("Error: No file selected.\nPlease select a file.")
             // Provide a test api response in dev mode
-            if (isDevEnvironment) {
-                const vectorMap = deserializeVectorMap(example_api_response);
-                props.setVectorMap(vectorMap);
-                props.setPcdImageInfo(example_api_response.pcd_image_info);
-                navigate("/edit");
-            }
+            // if (isDevEnvironment) {
+            //     const vectorMap = deserializeVectorMap(example_api_response);
+            //     props.setVectorMap(vectorMap);
+            //     props.setPcdImageInfo(example_api_response.pcd_image_info);
+            //     navigate("/edit");
+            // }
         }
     };
 
@@ -83,10 +83,10 @@ function Upload(props: UploadProps) {
         }
     }
     useEffect(() => {
-        window.addEventListener("dragenter", function (e) {
+        window.addEventListener("dragenter", function(e) {
             setDragging(true);
         });
-        window.addEventListener("dragleave", function (e) {
+        window.addEventListener("dragleave", function(e) {
             const target = e.target as HTMLDivElement;
             if (target !== undefined && target !== null) {
                 if (target.id === 'drop-zone') {

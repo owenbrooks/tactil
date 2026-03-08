@@ -36,7 +36,7 @@ const NODE_RADIUS_PX = 13 / 2; // used for mouse overlap detection and drawing
 
 function Edit(props: EditProps) {
 
-  const isDebugEnvironment = process.env.REACT_APP_TACTIL_ENV === 'debug';
+  // const isDebugEnvironment = process.env.REACT_APP_TACTIL_ENV === 'debug';
   const { vectorMap } = props;
   const initialGraph = vectorMapToGraph(vectorMap);
   const [
@@ -279,16 +279,16 @@ function Edit(props: EditProps) {
         <div>
           <button onClick={toggleBackgroundImage}>{showBackgroundImage ? "Hide background image (H)" : "Show background image (H)"}</button>
         </div>
-        {isDebugEnvironment &&
-          <>
-            <div>
-              <br />
-              Upload map
-              <input type="file" onChange={handleVectorMapUpload} />
-              <button onClick={saveVectorMap}>Save map</button>
-            </div>
-          </>
-        }
+        {/* {isDebugEnvironment &&
+        //   <>
+        //     <div>
+        //       <br />
+        //       Upload map
+        //       <input type="file" onChange={handleVectorMapUpload} />
+        //       <button onClick={saveVectorMap}>Save map</button>
+        //     </div>
+        //   </>
+        // }
         {/* <pre>{JSON.stringify(isDragging)}</pre> */}
       </div>
       <div className='edit-frame' id="edit-frame" ref={editDivRef}
